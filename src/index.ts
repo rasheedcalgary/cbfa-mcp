@@ -19,9 +19,10 @@ import { config, logConfigStatus } from "./config.js";
 import { startStdioTransport } from "./transport/stdio.js";
 import { startHttpTransport } from "./transport/http.js";
 import { logger } from "./logger.js";
+import { printBanner } from "./banner.js";
 
 async function main(): Promise<void> {
-  logger.info(`Starting CBA MCP Server v0.1.0`);
+  printBanner();
   logger.info(`Transport: ${config.transport}`);
   console.error("");
 
