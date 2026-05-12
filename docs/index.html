@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CBA-MCP — Custom Branded Apps AI Server</title>
+  <meta name="description" content="Give AI agents natural-language access to the Trainerize Custom Branded Apps platform. Query 30,000+ apps, check build queues, and find stale apps — no SQL, no dashboards." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #08090e;
+      --bg2:       #0e1018;
+      --bg3:       #141720;
+      --border:    #1e2330;
+      --cyan:      #00d4e8;
+      --cyan-dim:  #00b4c8;
+      --gold:      #f5c842;
+      --green:     #3ddc84;
+      --red:       #ff5f57;
+      --purple:    #ae81ff;
+      --text:      #e2e6f0;
+      --muted:     #6b7a99;
+      --radius:    10px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    /* ── NAV ─────────────────────────────────────────── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(8,9,14,0.85);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 56px;
+    }
+    .nav-logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px; font-weight: 500;
+      color: var(--cyan);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+    }
+    .nav-links { display: flex; gap: 1.8rem; list-style: none; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size: 13.5px;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-btn {
+      background: var(--cyan); color: #08090e;
+      padding: 6px 16px; border-radius: 6px;
+      font-size: 13px; font-weight: 600;
+      text-decoration: none; transition: opacity .2s;
+    }
+    .nav-btn:hover { opacity: .85; }
+
+    /* ── HERO ─────────────────────────────────────────── */
+    .hero {
+      text-align: center;
+      padding: 100px 2rem 80px;
+      background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0,212,232,.12), transparent);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(0,212,232,.08); border: 1px solid rgba(0,212,232,.2);
+      padding: 5px 14px; border-radius: 100px;
+      font-size: 12px; font-weight: 500; color: var(--cyan);
+      margin-bottom: 28px; letter-spacing: .04em;
+    }
+    .hero-badge .dot { width:7px; height:7px; border-radius:50%; background:var(--cyan); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+    .hero h1 {
+      font-size: clamp(2.2rem, 5vw, 3.8rem);
+      font-weight: 700; line-height: 1.15;
+      letter-spacing: -.02em;
+      margin-bottom: 20px;
+    }
+    .hero h1 span { color: var(--cyan); }
+    .hero p {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: var(--muted); max-width: 640px; margin: 0 auto 36px;
+    }
+    .hero-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--cyan); color: #08090e;
+      padding: 12px 28px; border-radius: 8px;
+      font-weight: 600; font-size: 15px; text-decoration: none;
+      transition: opacity .2s, transform .15s;
+    }
+    .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-secondary {
+      background: var(--bg3); color: var(--text);
+      border: 1px solid var(--border);
+      padding: 12px 28px; border-radius: 8px;
+      font-weight: 500; font-size: 15px; text-decoration: none;
+      transition: border-color .2s, transform .15s;
+    }
+    .btn-secondary:hover { border-color: var(--cyan); transform: translateY(-1px); }
+
+    /* ── STATS BAR ─────────────────────────────────────── */
+    .stats {
+      display: flex; justify-content: center; gap: 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+    }
+    .stat {
+      flex: 1; max-width: 220px;
+      text-align: center; padding: 28px 20px;
+      border-right: 1px solid var(--border);
+    }
+    .stat:last-child { border-right: none; }
+    .stat-number { font-size: 2rem; font-weight: 700; color: var(--cyan); }
+    .stat-label { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+
+    /* ── SECTION LAYOUT ────────────────────────────────── */
+    section { padding: 80px 2rem; }
+    .container { max-width: 960px; margin: 0 auto; }
+    .section-label {
+      font-size: 11px; font-weight: 600; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--cyan); margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(1.5rem, 3vw, 2.2rem);
+      font-weight: 700; margin-bottom: 14px; letter-spacing: -.01em;
+    }
+    .section-sub { color: var(--muted); max-width: 580px; margin-bottom: 48px; }
+
+    /* ── STEPS ─────────────────────────────────────────── */
+    .steps { display: flex; flex-direction: column; gap: 0; }
+    .step {
+      display: grid; grid-template-columns: 56px 1fr;
+      gap: 0 24px; position: relative;
+    }
+    .step:not(:last-child)::before {
+      content: '';
+      position: absolute; left: 27px; top: 56px; bottom: 0;
+      width: 2px; background: var(--border);
+    }
+    .step-num {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--bg3); border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px; font-weight: 600; color: var(--cyan);
+      flex-shrink: 0; position: relative; z-index: 1;
+    }
+    .step-body { padding: 14px 0 40px; }
+    .step-body h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+    .step-body p { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
+
+    /* ── CODE BLOCKS ────────────────────────────────────── */
+    .code-block {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .code-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.02);
+    }
+    .code-header span { font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+    .code-dots { display: flex; gap: 6px; }
+    .code-dots i { width: 10px; height: 10px; border-radius: 50%; }
+    .code-dots i:nth-child(1) { background: var(--red); }
+    .code-dots i:nth-child(2) { background: var(--gold); }
+    .code-dots i:nth-child(3) { background: var(--green); }
+    pre {
+      padding: 18px; overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; line-height: 1.65;
+    }
+    .kw  { color: var(--purple); }
+    .str { color: var(--green); }
+    .cm  { color: var(--muted); font-style: italic; }
+    .hl  { color: var(--cyan); }
+    .val { color: var(--gold); }
+
+    /* ── TOOLS GRID ─────────────────────────────────────── */
+    .tools-section { background: var(--bg2); }
+    .tool-category { margin-bottom: 48px; }
+    .tool-category h3 {
+      font-size: 13px; font-weight: 600; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--cyan);
+      margin-bottom: 20px; padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .tool-card {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      transition: border-color .2s, transform .15s;
+    }
+    .tool-card:hover { border-color: rgba(0,212,232,.35); transform: translateY(-2px); }
+    .tool-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; font-weight: 500; color: var(--cyan);
+      margin-bottom: 8px;
+    }
+    .tool-desc { font-size: 13.5px; color: var(--muted); margin-bottom: 14px; }
+    .tool-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 100px;
+      font-size: 11px; font-weight: 600; letter-spacing: .04em;
+    }
+    .badge-read   { background: rgba(61,220,132,.12); color: var(--green); border: 1px solid rgba(61,220,132,.2); }
+    .badge-action { background: rgba(245,200,66,.1);  color: var(--gold);  border: 1px solid rgba(245,200,66,.2); }
+    .badge-soon   { background: rgba(107,122,153,.1); color: var(--muted); border: 1px solid var(--border); }
+
+    /* ── QUERIES ─────────────────────────────────────────── */
+    .queries-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+    .query-card {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px 20px;
+      display: flex; gap: 14px; align-items: flex-start;
+      transition: border-color .2s;
+    }
+    .query-card:hover { border-color: rgba(0,212,232,.3); }
+    .query-icon {
+      font-size: 22px; flex-shrink: 0; margin-top: 2px;
+    }
+    .query-text {
+      font-size: 14px; color: var(--text); font-style: italic;
+      line-height: 1.5;
+    }
+    .query-text::before { content: '"'; color: var(--cyan); }
+    .query-text::after  { content: '"'; color: var(--cyan); }
+
+    /* ── TRANSPORTS ──────────────────────────────────────── */
+    .transport-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .transport-card {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 28px;
+    }
+    .transport-card h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+    .transport-card p { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+    .compat-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .compat-tag {
+      padding: 4px 10px; border-radius: 6px;
+      font-size: 12px; font-weight: 500;
+      background: rgba(255,255,255,.05); border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    /* ── ROADMAP ─────────────────────────────────────────── */
+    .roadmap-section { background: var(--bg2); }
+    .roadmap-list { display: flex; flex-direction: column; gap: 12px; }
+    .roadmap-item {
+      display: flex; align-items: center; gap: 16px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px 20px;
+    }
+    .roadmap-status { font-size: 18px; flex-shrink: 0; }
+    .roadmap-phase { font-size: 12px; font-weight: 600; color: var(--muted); min-width: 100px; }
+    .roadmap-desc { font-size: 14px; flex: 1; }
+    .roadmap-tag {
+      font-size: 11px; font-weight: 600; padding: 3px 10px;
+      border-radius: 100px; letter-spacing: .04em;
+    }
+    .tag-done { background: rgba(61,220,132,.12); color: var(--green); }
+    .tag-wip  { background: rgba(245,200,66,.1);  color: var(--gold); }
+    .tag-future { background: rgba(107,122,153,.1); color: var(--muted); }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 2rem;
+      text-align: center;
+      color: var(--muted); font-size: 13px;
+    }
+    footer a { color: var(--cyan); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    .footer-logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20px; font-weight: 600; color: var(--cyan);
+      margin-bottom: 12px;
+    }
+
+    /* ── RESPONSIVE ──────────────────────────────────────── */
+    @media (max-width: 700px) {
+      nav { padding: 0 1.2rem; }
+      .nav-links { display: none; }
+      section { padding: 60px 1.2rem; }
+      .transport-grid { grid-template-columns: 1fr; }
+      .stats { flex-wrap: wrap; }
+      .stat { flex: 1 1 45%; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ──────────────────────────────────────────────────── -->
+<nav>
+  <a class="nav-logo" href="#">⬡ CBA-MCP</a>
+  <ul class="nav-links">
+    <li><a href="#quickstart">Quickstart</a></li>
+    <li><a href="#tools">Tools</a></li>
+    <li><a href="#examples">Examples</a></li>
+    <li><a href="#transports">Transports</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+  </ul>
+  <a class="nav-btn" href="https://github.com/rasheedcalgary/cbfa-mcp" target="_blank">GitHub →</a>
+</nav>
+
+<!-- ── HERO ──────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-badge">
+    <span class="dot"></span>
+    MCP Server · v1.0.0 · Trainerize CBA Hackathon 2026
+  </div>
+  <h1>AI Intelligence for<br /><span>Custom Branded Apps</span></h1>
+  <p>Give AI agents natural-language access to 30,000+ Trainerize CBA apps. Query status, find stale builds, check publish queues — no SQL, no dashboards.</p>
+  <div class="hero-ctas">
+    <a class="btn-primary" href="#quickstart">Get Started</a>
+    <a class="btn-secondary" href="https://github.com/rasheedcalgary/cbfa-mcp" target="_blank">View on GitHub</a>
+  </div>
+</section>
+
+<!-- ── STATS ──────────────────────────────────────────────────── -->
+<div class="stats">
+  <div class="stat"><div class="stat-number">30k+</div><div class="stat-label">Apps in registry</div></div>
+  <div class="stat"><div class="stat-number">10</div><div class="stat-label">MCP tools</div></div>
+  <div class="stat"><div class="stat-number">3</div><div class="stat-label">Transport modes</div></div>
+  <div class="stat"><div class="stat-number">0</div><div class="stat-label">Lines of SQL needed</div></div>
+</div>
+
+<!-- ── QUICKSTART ─────────────────────────────────────────────── -->
+<section id="quickstart">
+  <div class="container">
+    <p class="section-label">Integration</p>
+    <h2 class="section-title">Up and running in 4 steps</h2>
+    <p class="section-sub">Connect CBA-MCP to Cursor, Claude Desktop, or any MCP-compatible agent in minutes.</p>
+
+    <div class="steps">
+
+      <!-- Step 1 -->
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Clone and install</h3>
+          <p>Requires Node.js 20+. Clone the repo and install dependencies.</p>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><i></i><i></i><i></i></div>
+              <span>bash</span>
+            </div>
+            <pre><span class="hl">git clone</span> git@github.com:rasheedcalgary/cbfa-mcp.git
+<span class="hl">cd</span> cbfa-mcp
+<span class="hl">npm install</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Configure server credentials</h3>
+          <p>Copy the example env file and fill in the server-side infrastructure credentials. These are operator-managed — users never touch this file.</p>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><i></i><i></i><i></i></div>
+              <span>.env</span>
+            </div>
+            <pre><span class="cm"># Transport: "stdio" (default) or "http"</span>
+<span class="hl">TRANSPORT</span>=<span class="str">stdio</span>
+
+<span class="cm"># Admin Panel base URL</span>
+<span class="hl">ADMIN_PANEL_DOMAIN</span>=<span class="str">https://api.trainerize.com</span>
+
+<span class="cm"># Bitrise (for build action tools)</span>
+<span class="hl">BITRISE_TOKEN</span>=<span class="str">your-bitrise-token</span>
+
+<span class="cm"># AWS / S3 (CBA CSV data layer)</span>
+<span class="hl">AWS_ACCESS_KEY_ID</span>=<span class="str">your-key-id</span>
+<span class="hl">AWS_SECRET_ACCESS_KEY</span>=<span class="str">your-secret</span>
+<span class="hl">AWS_REGION</span>=<span class="str">us-east-1</span>
+<span class="hl">S3_BUCKET</span>=<span class="str">your-bucket</span>
+<span class="hl">S3_KEY</span>=<span class="str">path/to/cba_apps_dump.csv</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>Build the server</h3>
+          <p>Compiles TypeScript to an optimised ESM bundle in <code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan);background:var(--bg3);padding:2px 6px;border-radius:4px;">dist/</code>.</p>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><i></i><i></i><i></i></div>
+              <span>bash</span>
+            </div>
+            <pre><span class="hl">npm run build</span>
+<span class="cm"># ⚡️ Build success in ~25ms</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h3>Add to your agent config</h3>
+          <p>Each user adds this snippet to their <code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan);background:var(--bg3);padding:2px 6px;border-radius:4px;">~/.cursor/mcp.json</code> (or <code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan);background:var(--bg3);padding:2px 6px;border-radius:4px;">claude_desktop_config.json</code>). The <code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold);background:var(--bg3);padding:2px 6px;border-radius:4px;">ADMIN_PANEL_API_KEY</code> is the <em>only</em> value each user needs to supply — all server-side credentials are pre-loaded from <code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan);background:var(--bg3);padding:2px 6px;border-radius:4px;">.env</code>.</p>
+          <div class="code-block">
+            <div class="code-header">
+              <div class="code-dots"><i></i><i></i><i></i></div>
+              <span>~/.cursor/mcp.json</span>
+            </div>
+            <pre>{
+  <span class="kw">"mcpServers"</span>: {
+    <span class="kw">"cba-mcp"</span>: {
+      <span class="kw">"command"</span>: <span class="str">"npm"</span>,
+      <span class="kw">"args"</span>: [<span class="str">"--prefix"</span>, <span class="str">"/path/to/cbfa-mcp"</span>, <span class="str">"start"</span>],
+      <span class="kw">"env"</span>: {
+        <span class="kw">"ADMIN_PANEL_API_KEY"</span>: <span class="str">"your-api-key"</span>  <span class="cm">← only user-supplied value</span>
+      }
+    }
+  }
+}</pre>
+          </div>
+          <p style="margin-top:14px; font-size:13px; color:var(--muted);">Restart Cursor. A green dot in <strong style="color:var(--text)">Settings → MCP</strong> confirms the server is connected.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── TOOLS ──────────────────────────────────────────────────── -->
+<section id="tools" class="tools-section">
+  <div class="container">
+    <p class="section-label">Capabilities</p>
+    <h2 class="section-title">10 tools, zero boilerplate</h2>
+    <p class="section-sub">Every tool validates authentication, streams structured output, and returns clear error messages when credentials are missing.</p>
+
+    <div class="tool-category">
+      <h3>📖 Read tools — require ADMIN_PANEL_API_KEY</h3>
+      <div class="tool-grid">
+        <div class="tool-card">
+          <div class="tool-name">list_apps</div>
+          <div class="tool-desc">List all CBA apps with optional filter by type — enterprise, studio, pro, or abc.</div>
+          <span class="tool-badge badge-read">READ</span>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">get_app_info</div>
+          <div class="tool-desc">Full details for one app — merges CSV registry with live Admin API data including push cert expiry, theme config, and store links.</div>
+          <span class="tool-badge badge-read">READ</span>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">get_ios_status</div>
+          <div class="tool-desc">iOS App Store version, store status (ReadyForSale / None), and Apple account info for a specific app.</div>
+          <span class="tool-badge badge-read">READ</span>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">get_android_status</div>
+          <div class="tool-desc">Google Play version, store state, and Play account info for a specific app.</div>
+          <span class="tool-badge badge-read">READ</span>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">get_app_last_updated</div>
+          <div class="tool-desc">Last iOS and Android publish dates with days-ago labels and freshness rating (fresh / recent / aging / stale).</div>
+          <span class="tool-badge badge-read">READ</span>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">get_pending_apps</div>
+          <div class="tool-desc">Apps stuck in publish queues — PendingPublishList, PendingAppleSubmission, PendingAppleAgreement, or missing Google Play key.</div>
+          <span class="tool-badge badge-read">READ</span>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">get_stale_apps</div>
+          <div class="tool-desc">Apps not updated within a configurable threshold (default 180 days), filterable by type and platform.</div>
+          <span class="tool-badge badge-read">READ</span>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">get_build_queue</div>
+          <div class="tool-desc">Live CI build queue state — ReadyToBuild, Building, Built, Failed — for iOS or Android via the Admin API.</div>
+          <span class="tool-badge badge-read">READ</span>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">query_apps</div>
+          <div class="tool-desc">Flexible AND-filter report — combine ios_version, android_version, status, ios_store_status, app_type, and business_type in one query.</div>
+          <span class="tool-badge badge-read">READ</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-category">
+      <h3>⚡ Action tools — require BITRISE_TOKEN or Jenkins credentials</h3>
+      <div class="tool-grid">
+        <div class="tool-card">
+          <div class="tool-name">trigger_app_build</div>
+          <div class="tool-desc">Trigger an iOS or Android build on Bitrise or Jenkins for a given app. Returns build ID and queue URL.</div>
+          <span class="tool-badge badge-action">ACTION</span>
+        </div>
+        <div class="tool-card">
+          <div class="tool-name">get_build_status</div>
+          <div class="tool-desc">Poll build state, duration, and log URL for a running or completed build.</div>
+          <span class="tool-badge badge-action">ACTION</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── EXAMPLES ───────────────────────────────────────────────── -->
+<section id="examples">
+  <div class="container">
+    <p class="section-label">Example Queries</p>
+    <h2 class="section-title">Just ask in plain English</h2>
+    <p class="section-sub">No schema knowledge required. Paste any of these into Cursor or Claude Desktop after connecting CBA-MCP.</p>
+
+    <div class="queries-grid">
+      <div class="query-card"><div class="query-icon">📋</div><div class="query-text">List all enterprise apps</div></div>
+      <div class="query-card"><div class="query-icon">🔍</div><div class="query-text">Give me all info about com.trainerize.phantomcoaching</div></div>
+      <div class="query-card"><div class="query-icon">🍎</div><div class="query-text">Is com.trainerize.peakfitness live on the App Store?</div></div>
+      <div class="query-card"><div class="query-icon">🤖</div><div class="query-text">What's the Android status of com.trainerize.workoutanytime?</div></div>
+      <div class="query-card"><div class="query-icon">📅</div><div class="query-text">When was com.trainerize.eosfitness last updated?</div></div>
+      <div class="query-card"><div class="query-icon">⏳</div><div class="query-text">What apps are pending Apple review right now?</div></div>
+      <div class="query-card"><div class="query-icon">🕰️</div><div class="query-text">Which enterprise apps haven't shipped in 6 months?</div></div>
+      <div class="query-card"><div class="query-icon">🏗️</div><div class="query-text">What iOS apps are ready to build in the queue?</div></div>
+      <div class="query-card"><div class="query-icon">📊</div><div class="query-text">List all iOS 8.16.0 Published apps</div></div>
+      <div class="query-card"><div class="query-icon">🏢</div><div class="query-text">Which ABC enterprise apps are WaitingForArtwork?</div></div>
+      <div class="query-card"><div class="query-icon">✅</div><div class="query-text">Show me Trainerize studio apps that are ReadyForSale on iOS</div></div>
+      <div class="query-card"><div class="query-icon">📱</div><div class="query-text">How many apps are on Android version 8.10.3?</div></div>
+      <div class="query-card"><div class="query-icon">🔨</div><div class="query-text">Trigger a Bitrise iOS build for com.trainerize.peakfitness</div></div>
+      <div class="query-card"><div class="query-icon">📡</div><div class="query-text">Is the build for com.trainerize.peakfitness done yet?</div></div>
+      <div class="query-card"><div class="query-icon">🏋️</div><div class="query-text">Which stale studio apps are on both iOS and Android older than 90 days?</div></div>
+      <div class="query-card"><div class="query-icon">🔑</div><div class="query-text">Which apps have a missing Google Play account?</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TRANSPORTS ─────────────────────────────────────────────── -->
+<section id="transports" style="background:var(--bg2)">
+  <div class="container">
+    <p class="section-label">Transports</p>
+    <h2 class="section-title">Works with every MCP client</h2>
+    <p class="section-sub">Switch transport modes with a single environment variable. No code changes required.</p>
+
+    <div class="transport-grid">
+      <div class="transport-card">
+        <h3>📡 stdio <span style="font-size:12px;color:var(--cyan);font-weight:500;margin-left:8px;">default</span></h3>
+        <p>The agent spawns the server as a subprocess and communicates over stdin/stdout. Zero network config — just add the mcp.json snippet and go.</p>
+        <div class="compat-list">
+          <span class="compat-tag">Cursor</span>
+          <span class="compat-tag">Claude Desktop</span>
+          <span class="compat-tag">MCP Inspector</span>
+          <span class="compat-tag">VS Code (Copilot)</span>
+        </div>
+        <div style="margin-top:18px;">
+          <div class="code-block">
+            <pre style="padding:12px 16px;"><span class="hl">TRANSPORT</span>=<span class="str">stdio</span> <span class="cm"># default</span>
+<span class="hl">npm start</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="transport-card">
+        <h3>🌐 HTTP <span style="font-size:12px;color:var(--gold);font-weight:500;margin-left:8px;">remote</span></h3>
+        <p>Exposes Streamable HTTP (<code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan)">POST /mcp</code>) and legacy SSE (<code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan)">GET /sse</code>) endpoints. Deploy to any server and connect remotely.</p>
+        <div class="compat-list">
+          <span class="compat-tag">Claude.ai</span>
+          <span class="compat-tag">OpenAI Agents SDK</span>
+          <span class="compat-tag">LangChain</span>
+          <span class="compat-tag">n8n</span>
+          <span class="compat-tag">Custom agents</span>
+        </div>
+        <div style="margin-top:18px;">
+          <div class="code-block">
+            <pre style="padding:12px 16px;"><span class="hl">TRANSPORT</span>=<span class="str">http</span> <span class="hl">npm start</span>
+<span class="cm"># Server on http://localhost:3000</span></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── ROADMAP ────────────────────────────────────────────────── -->
+<section id="roadmap" class="roadmap-section">
+  <div class="container">
+    <p class="section-label">Roadmap</p>
+    <h2 class="section-title">What's built, what's next</h2>
+    <p class="section-sub">Built during the Trainerize CBA Hackathon, May 2026.</p>
+
+    <div class="roadmap-list">
+      <div class="roadmap-item">
+        <div class="roadmap-status">✅</div>
+        <div class="roadmap-phase">Phase 1</div>
+        <div class="roadmap-desc">Project scaffold — transports, auth guards, tool stubs, structured logging, CLI banner</div>
+        <span class="roadmap-tag tag-done">Done</span>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-status">✅</div>
+        <div class="roadmap-phase">Phase 2</div>
+        <div class="roadmap-desc">Data layer — S3 CSV downloader, parser, in-memory app registry with 30k+ apps</div>
+        <span class="roadmap-tag tag-done">Done</span>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-status">✅</div>
+        <div class="roadmap-phase">Phase 3</div>
+        <div class="roadmap-desc">All 7 read tools live with real data + Admin API integration (getNativeApp, GetNativeAppGroupSettings, getAppBuildQueue)</div>
+        <span class="roadmap-tag tag-done">Done</span>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-status">✅</div>
+        <div class="roadmap-phase">Phase 3.1</div>
+        <div class="roadmap-desc">query_apps flexible report tool + CSV column mapping fix + security hardening (log redaction, error sanitisation)</div>
+        <span class="roadmap-tag tag-done">Done</span>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-status">⏳</div>
+        <div class="roadmap-phase">Phase 4</div>
+        <div class="roadmap-desc">Action tools — Bitrise and Jenkins build trigger and status polling</div>
+        <span class="roadmap-tag tag-wip">Pending</span>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-status">🔮</div>
+        <div class="roadmap-phase">Phase 5</div>
+        <div class="roadmap-desc">Apple push cert + provisioning profile expiry checker</div>
+        <span class="roadmap-tag tag-future">Post-MVP</span>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-status">🔮</div>
+        <div class="roadmap-phase">Phase 6</div>
+        <div class="roadmap-desc">Production deployment — EC2 / Cloud Run with HTTP transport + Google OAuth</div>
+        <span class="roadmap-tag tag-future">Post-MVP</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ─────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-logo">⬡ CBA-MCP</div>
+  <p style="margin-bottom:8px;">
+    Built at the <strong style="color:var(--text)">Trainerize CBA Hackathon</strong> · May 2026
+  </p>
+  <p>
+    <a href="https://github.com/rasheedcalgary/cbfa-mcp" target="_blank">GitHub</a>
+    &nbsp;·&nbsp;
+    <a href="https://github.com/rasheedcalgary/cbfa-mcp/blob/main/README.md" target="_blank">Docs</a>
+    &nbsp;·&nbsp;
+    <a href="https://github.com/rasheedcalgary/cbfa-mcp/blob/main/AGENTS.md" target="_blank">AGENTS.md</a>
+  </p>
+  <p style="margin-top:16px; font-size:12px;">© 2026 ABC Fitness Solutions. All rights reserved.</p>
+</footer>
+
+</body>
+</html>
