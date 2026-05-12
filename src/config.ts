@@ -15,6 +15,19 @@
  * via the mcp.json env block and is merged in by the agent runtime — no conflict.
  */
 
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
+import { config as dotenvConfig } from "dotenv";
+
+// ─── Load .env ────────────────────────────────────────────────────────────────
+// Must run before the config object below reads process.env.
+// We derive the path from import.meta.url (= dist/index.js in the bundle) so
+// it resolves correctly regardless of the shell's working directory — important
+// when Cursor / Claude Desktop spawns the server as an absolute path:
+//   node /abs/path/cbfa-mcp/dist/index.js
+const __envDir = dirname(fileURLToPath(import.meta.url));
+dotenvConfig({ path: resolve(__envDir, "../.env") });
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface Config {
