@@ -491,12 +491,364 @@
       .footer-bottom { flex-direction: column; text-align: center; }
     }
 
-    /* ── Animations ────────────────────────────────────────────── */
+    /* ── SIDE PANEL ────────────────────────────────────────────── */
+    .panel-backdrop {
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(0,0,0,.65);
+      backdrop-filter: blur(4px);
+      opacity: 0; pointer-events: none;
+      transition: opacity .3s;
+    }
+    .panel-backdrop.open { opacity: 1; pointer-events: all; }
+
+    .side-panel {
+      position: fixed; top: 0; right: 0; bottom: 0;
+      width: min(520px, 100vw);
+      z-index: 2001;
+      background: var(--bg2);
+      border-left: 1px solid var(--border);
+      transform: translateX(100%);
+      transition: transform .35s cubic-bezier(.22,.68,0,1.2);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .side-panel.open { transform: translateX(0); }
+
+    .panel-header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 20px 24px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .panel-tool-icon {
+      width: 44px; height: 44px; border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .panel-tool-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px; font-weight: 600; color: var(--cyan);
+    }
+    .panel-tool-type { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .panel-close {
+      margin-left: auto;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; line-height: 1;
+      transition: background .2s, color .2s;
+    }
+    .panel-close:hover { background: var(--bg4); color: var(--text); }
+
+    .panel-body {
+      flex: 1; overflow-y: auto; padding: 24px;
+      display: flex; flex-direction: column; gap: 24px;
+    }
+    .panel-body::-webkit-scrollbar { width: 4px; }
+    .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .panel-section-title {
+      font-size: 11px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .panel-desc {
+      font-size: 14px; color: var(--text); line-height: 1.75;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 14px 16px;
+    }
+    .param-list { display: flex; flex-direction: column; gap: 8px; }
+    .param-row {
+      display: flex; gap: 10px; align-items: flex-start;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 10px 14px;
+    }
+    .param-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px; color: var(--cyan); flex-shrink: 0; min-width: 140px;
+    }
+    .param-req {
+      font-size: 10px; color: var(--red); font-weight: 600;
+      letter-spacing: .05em; flex-shrink: 0; margin-top: 2px;
+    }
+    .param-opt {
+      font-size: 10px; color: var(--muted); font-weight: 600;
+      letter-spacing: .05em; flex-shrink: 0; margin-top: 2px;
+    }
+    .param-desc { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+
+    .query-examples { display: flex; flex-direction: column; gap: 8px; }
+    .query-example {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 10px 14px;
+      font-size: 13.5px; color: var(--text);
+      transition: border-color .2s;
+    }
+    .query-example:hover { border-color: rgba(0,212,232,.3); }
+    .query-example .qi { font-size: 16px; flex-shrink: 0; }
+    .query-example em { color: var(--muted); font-style: normal; }
+    .copy-btn {
+      margin-left: auto; flex-shrink: 0;
+      background: transparent; border: 1px solid var(--border);
+      border-radius: 6px; padding: 3px 9px;
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+      white-space: nowrap;
+    }
+    .copy-btn:hover { background: rgba(0,212,232,.1); color: var(--cyan); border-color: rgba(0,212,232,.3); }
+    .copy-btn.copied { background: rgba(61,220,132,.12); color: var(--green); border-color: rgba(61,220,132,.3); }
+
+    .panel-note {
+      background: rgba(0,212,232,.06); border: 1px solid rgba(0,212,232,.18);
+      border-radius: var(--r-sm); padding: 12px 16px;
+      font-size: 13px; color: var(--muted); line-height: 1.7;
+    }
+    .panel-note strong { color: var(--cyan); }
+
+    /* ── Tool card clickable ────────────────────────────────────── */
+    .tool-card {
+      cursor: pointer;
+    }
+    .tool-card .tap-hint {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; color: var(--muted2); margin-top: 12px;
+      transition: color .2s;
+    }
+    .tool-card:hover .tap-hint { color: var(--cyan); }
+    .tap-hint svg { width: 12px; height: 12px; }
     .fade-up {
       opacity: 0; transform: translateY(24px);
       transition: opacity .6s ease, transform .6s ease;
     }
     .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── ARCHITECTURE ──────────────────────────────────────────── */
+    .arch-section { background: var(--bg); }
+    .arch-section .section-sub { margin-bottom: 60px; }
+
+    .arch-diagram {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    /* Rows */
+    .arch-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    /* Node card */
+    .arch-node {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: border-color .2s, box-shadow .2s, transform .2s;
+      min-width: 220px;
+      flex: 1;
+      max-width: 340px;
+    }
+    .arch-node:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 36px rgba(0,0,0,.35);
+    }
+    .arch-node.node-db    { border-color: rgba(96,165,250,.35); }
+    .arch-node.node-db:hover { border-color: rgba(96,165,250,.65); box-shadow: 0 12px 36px rgba(96,165,250,.12); }
+    .arch-node.node-api   { border-color: rgba(192,132,252,.35); }
+    .arch-node.node-api:hover { border-color: rgba(192,132,252,.65); box-shadow: 0 12px 36px rgba(192,132,252,.12); }
+    .arch-node.node-s3    { border-color: rgba(245,200,66,.35); }
+    .arch-node.node-s3:hover { border-color: rgba(245,200,66,.65); box-shadow: 0 12px 36px rgba(245,200,66,.12); }
+    .arch-node.node-mcp   { border-color: rgba(0,212,232,.5); box-shadow: 0 0 0 1px rgba(0,212,232,.08); }
+    .arch-node.node-mcp:hover { border-color: var(--cyan); box-shadow: 0 12px 36px rgba(0,212,232,.18); }
+    .arch-node.node-agent { border-color: rgba(61,220,132,.35); }
+    .arch-node.node-agent:hover { border-color: rgba(61,220,132,.65); box-shadow: 0 12px 36px rgba(61,220,132,.12); }
+
+    .arch-node-icon {
+      width: 42px; height: 42px;
+      border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .icon-db    { background: rgba(96,165,250,.12); }
+    .icon-api   { background: rgba(192,132,252,.12); }
+    .icon-s3    { background: rgba(245,200,66,.1); }
+    .icon-mcp   { background: rgba(0,212,232,.1); }
+    .icon-agent { background: rgba(61,220,132,.12); }
+
+    .arch-node-body { flex: 1; min-width: 0; }
+    .arch-node-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; font-weight: 600; color: var(--text);
+      white-space: nowrap;
+    }
+    .arch-node-sub {
+      font-size: 12px; color: var(--muted);
+      margin-top: 2px; line-height: 1.4;
+    }
+    .arch-node-tag {
+      font-size: 10px; font-weight: 700; letter-spacing: .06em;
+      padding: 2px 8px; border-radius: 100px; margin-top: 6px;
+      display: inline-block;
+    }
+    .tag-blue   { background: rgba(96,165,250,.12);  color: var(--blue);   border: 1px solid rgba(96,165,250,.25); }
+    .tag-purple { background: rgba(192,132,252,.12); color: var(--purple); border: 1px solid rgba(192,132,252,.25); }
+    .tag-gold   { background: rgba(245,200,66,.1);   color: var(--gold);   border: 1px solid rgba(245,200,66,.25); }
+    .tag-cyan   { background: rgba(0,212,232,.1);    color: var(--cyan);   border: 1px solid rgba(0,212,232,.25); }
+    .tag-green  { background: rgba(61,220,132,.1);   color: var(--green);  border: 1px solid rgba(61,220,132,.25); }
+
+    /* Arrow connector */
+    .arch-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 0;
+    }
+    .arch-arrow-line {
+      width: 2px;
+      height: 28px;
+      background: linear-gradient(to bottom, var(--border), rgba(0,212,232,.4));
+      border-radius: 1px;
+    }
+    .arch-arrow-head {
+      width: 0; height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid rgba(0,212,232,.5);
+    }
+    .arch-arrow-label {
+      font-size: 10.5px; font-weight: 600; letter-spacing: .06em;
+      color: var(--muted); text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 4px;
+      white-space: nowrap;
+    }
+    .arch-arrow-badge {
+      font-size: 10px; font-weight: 700;
+      padding: 2px 9px; border-radius: 100px;
+      background: rgba(245,200,66,.1); color: var(--gold);
+      border: 1px solid rgba(245,200,66,.25);
+      font-family: 'JetBrains Mono', monospace;
+      white-space: nowrap;
+    }
+
+    /* Horizontal connector for multi-node rows */
+    .arch-h-connector {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex: 0 0 auto;
+    }
+    .arch-h-line {
+      width: 24px; height: 2px;
+      background: linear-gradient(to right, rgba(0,212,232,.3), var(--border));
+    }
+
+    /* MCP internals panel */
+    .arch-mcp-panel {
+      background: var(--bg3);
+      border: 1px solid rgba(0,212,232,.4);
+      border-radius: var(--r);
+      padding: 24px;
+      width: 100%;
+      max-width: 860px;
+      box-shadow: 0 0 0 1px rgba(0,212,232,.06), 0 20px 60px rgba(0,0,0,.4);
+    }
+    .arch-mcp-title {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 18px;
+    }
+    .arch-mcp-title-icon {
+      width: 36px; height: 36px; border-radius: var(--r-sm);
+      background: rgba(0,212,232,.1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+    }
+    .arch-mcp-title-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px; font-weight: 700; color: var(--cyan);
+    }
+    .arch-mcp-title-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+    .arch-mcp-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+    }
+    .arch-mcp-item {
+      background: var(--bg4);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 12px 14px;
+    }
+    .arch-mcp-item-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px; font-weight: 600; color: var(--cyan);
+      margin-bottom: 4px;
+    }
+    .arch-mcp-item-desc {
+      font-size: 11.5px; color: var(--muted); line-height: 1.5;
+    }
+
+    /* Agent chips row */
+    .arch-agents-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      max-width: 860px;
+      width: 100%;
+    }
+    .arch-agent-chip {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg3); border: 1px solid rgba(61,220,132,.25);
+      border-radius: var(--r-sm); padding: 10px 16px;
+      font-size: 13px; color: var(--text);
+      transition: border-color .2s, transform .15s;
+    }
+    .arch-agent-chip:hover { border-color: rgba(61,220,132,.5); transform: translateY(-2px); }
+    .arch-agent-chip .chip-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green); flex-shrink: 0;
+    }
+
+    /* Legend */
+    .arch-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      margin-top: 40px;
+      padding: 20px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      max-width: 860px;
+      width: 100%;
+    }
+    .arch-legend-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12.5px; color: var(--muted);
+    }
+    .arch-legend-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    @media (max-width: 640px) {
+      .arch-row { flex-direction: column; }
+      .arch-node { max-width: 100%; }
+      .arch-mcp-grid { grid-template-columns: 1fr 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -510,6 +862,7 @@
   <ul class="nav-links">
     <li><a href="#demo">Live Demo</a></li>
     <li><a href="#tools">Tools</a></li>
+    <li><a href="#architecture">Architecture</a></li>
     <li><a href="#integration">Integration</a></li>
     <li><a href="#team">Team</a></li>
   </ul>
@@ -576,107 +929,269 @@
     <p class="section-sub fade-up">Every tool validates auth, redacts sensitive values from logs, and returns actionable error messages when credentials are missing.</p>
 
     <div class="tools-grid fade-up">
-      <div class="tool-card">
+      <div class="tool-card" data-tool="list_apps">
         <div class="tool-card-top">
           <div class="tool-icon icon-read">📋</div>
-          <div>
-            <div class="tool-name">list_apps</div>
-          </div>
+          <div><div class="tool-name">list_apps</div></div>
           <span class="tool-badge badge-read">READ</span>
         </div>
         <p class="tool-desc">List all CBA apps in the registry, with optional filter by type — enterprise, studio, pro, or abc.</p>
+        <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
       </div>
 
-      <div class="tool-card">
+      <div class="tool-card" data-tool="get_app_info">
         <div class="tool-card-top">
           <div class="tool-icon icon-read">🔍</div>
           <div><div class="tool-name">get_app_info</div></div>
           <span class="tool-badge badge-read">READ</span>
         </div>
         <p class="tool-desc">Full details for one app — combines CSV registry data with live Admin API: push cert expiry, store links, theme config.</p>
+        <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
       </div>
 
-      <div class="tool-card">
+      <div class="tool-card" data-tool="get_ios_status">
         <div class="tool-card-top">
           <div class="tool-icon icon-read">🍎</div>
           <div><div class="tool-name">get_ios_status</div></div>
           <span class="tool-badge badge-read">READ</span>
         </div>
         <p class="tool-desc">iOS App Store version, store state, iOS membership status (AgreementIsMissing), and Apple account.</p>
+        <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
       </div>
 
-      <div class="tool-card">
+      <div class="tool-card" data-tool="get_android_status">
         <div class="tool-card-top">
           <div class="tool-icon icon-read">🤖</div>
           <div><div class="tool-name">get_android_status</div></div>
           <span class="tool-badge badge-read">READ</span>
         </div>
         <p class="tool-desc">Android version, Google Play store state, and Play Store account info.</p>
+        <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
       </div>
 
-      <div class="tool-card">
+      <div class="tool-card" data-tool="get_app_last_updated">
         <div class="tool-card-top">
           <div class="tool-icon icon-read">📅</div>
           <div><div class="tool-name">get_app_last_updated</div></div>
           <span class="tool-badge badge-read">READ</span>
         </div>
         <p class="tool-desc">Last iOS and Android publish dates with days-ago labels and a freshness rating (fresh / aging / stale).</p>
+        <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
       </div>
 
-      <div class="tool-card">
+      <div class="tool-card" data-tool="get_pending_apps">
         <div class="tool-card-top">
           <div class="tool-icon icon-read">⏳</div>
           <div><div class="tool-name">get_pending_apps</div></div>
           <span class="tool-badge badge-read">READ</span>
         </div>
         <p class="tool-desc">Apps stuck in queues — PendingAppleSubmission, PendingAppleAgreement, MissingIOSMembership, PendingGooglePlayKey.</p>
+        <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
       </div>
 
-      <div class="tool-card">
+      <div class="tool-card" data-tool="get_stale_apps">
         <div class="tool-card-top">
           <div class="tool-icon icon-read">🕰️</div>
           <div><div class="tool-name">get_stale_apps</div></div>
           <span class="tool-badge badge-read">READ</span>
         </div>
         <p class="tool-desc">Apps not updated within a configurable threshold (default 180 days), filterable by type and platform.</p>
+        <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
       </div>
 
-      <div class="tool-card">
+      <div class="tool-card" data-tool="get_build_queue">
         <div class="tool-card-top">
           <div class="tool-icon icon-read">🏗️</div>
           <div><div class="tool-name">get_build_queue</div></div>
           <span class="tool-badge badge-read">READ</span>
         </div>
         <p class="tool-desc">Live CI build queue state — ReadyToBuild, Building, Built, Failed — for iOS or Android via Admin API.</p>
+        <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
       </div>
 
-      <div class="tool-card">
+      <div class="tool-card" data-tool="query_apps">
         <div class="tool-card-top">
           <div class="tool-icon icon-read">📊</div>
           <div><div class="tool-name">query_apps</div></div>
           <span class="tool-badge badge-read">READ</span>
         </div>
         <p class="tool-desc">Flexible AND-filter report across version, CBA status, App Store state, iOS membership, app type, and business.</p>
+        <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
       </div>
 
-      <div class="tool-card">
+      <div class="tool-card" data-tool="check_cert_validity">
         <div class="tool-card-top">
           <div class="tool-icon icon-read">🔐</div>
           <div><div class="tool-name">check_cert_validity</div></div>
           <span class="tool-badge badge-read">READ</span>
         </div>
         <p class="tool-desc">Apple push cert and provisioning profile check. Single-app or bulk scan with expiry threshold. Sorted by severity.</p>
+        <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
       </div>
 
-      <div class="tool-card">
+      <div class="tool-card" data-tool="trigger_app_build">
         <div class="tool-card-top">
           <div class="tool-icon icon-action">⚡</div>
           <div><div class="tool-name">trigger_app_build</div></div>
           <span class="tool-badge badge-action">ACTION</span>
         </div>
         <p class="tool-desc">Trigger an iOS or Android build on Bitrise or Jenkins. Returns build ID and queue URL. <em>(Phase 4)</em></p>
+        <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ ARCHITECTURE ════════ -->
+<section id="architecture" class="arch-section">
+  <div class="container">
+    <span class="section-eyebrow fade-up">Architecture</span>
+    <h2 class="section-title fade-up">How data flows end-to-end</h2>
+    <p class="section-sub arch-section fade-up">The Trainerize database is the source of truth. Every morning at 6 AM a CSV snapshot is exported to S3. The MCP server loads that snapshot on startup and serves it — plus live Admin Panel calls — to any connected AI agent.</p>
+
+    <div class="arch-diagram fade-up">
+
+      <!-- ── Layer 1: Database ── -->
+      <div class="arch-row">
+        <div class="arch-node node-db">
+          <div class="arch-node-icon icon-db">🗄️</div>
+          <div class="arch-node-body">
+            <div class="arch-node-name">Trainerize Database</div>
+            <div class="arch-node-sub">PostgreSQL · 30 000+ app records</div>
+            <span class="arch-node-tag tag-blue">Source of Truth</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Arrow 1 → 2 ── -->
+      <div class="arch-arrow">
+        <div class="arch-arrow-line"></div>
+        <div class="arch-arrow-head"></div>
+        <div class="arch-arrow-label">REST API</div>
+      </div>
+
+      <!-- ── Layer 2: Trainerize API ── -->
+      <div class="arch-row">
+        <div class="arch-node node-api">
+          <div class="arch-node-icon icon-api">⚙️</div>
+          <div class="arch-node-body">
+            <div class="arch-node-name">Trainerize API</div>
+            <div class="arch-node-sub">Internal service — reads app metadata, push cert status, store states</div>
+            <span class="arch-node-tag tag-purple">Internal</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Arrow 2 → 3 ── -->
+      <div class="arch-arrow">
+        <div class="arch-arrow-line"></div>
+        <div class="arch-arrow-head"></div>
+        <div class="arch-arrow-label">Nightly export</div>
+        <div style="margin-top:4px">
+          <span class="arch-arrow-badge">⏰ Every day at 6 AM</span>
+        </div>
+      </div>
+
+      <!-- ── Layer 3: S3 ── -->
+      <div class="arch-row">
+        <div class="arch-node node-s3">
+          <div class="arch-node-icon icon-s3">☁️</div>
+          <div class="arch-node-body">
+            <div class="arch-node-name">AWS S3 · CSV Dump</div>
+            <div class="arch-node-sub">Full app registry snapshot — one row per CBA app · auto-rotated daily</div>
+            <span class="arch-node-tag tag-gold">Snapshot store</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Arrow 3 → 4 ── -->
+      <div class="arch-arrow">
+        <div class="arch-arrow-line"></div>
+        <div class="arch-arrow-head"></div>
+        <div class="arch-arrow-label">Downloaded on startup</div>
+      </div>
+
+      <!-- ── Layer 4: MCP Server (expanded) ── -->
+      <div class="arch-mcp-panel">
+        <div class="arch-mcp-title">
+          <div class="arch-mcp-title-icon">🔷</div>
+          <div>
+            <div class="arch-mcp-title-text">CBA-MCP Server</div>
+            <div class="arch-mcp-title-sub">TypeScript · Node.js 20 · @modelcontextprotocol/sdk · stdio + HTTP transports</div>
+          </div>
+          <span class="arch-node-tag tag-cyan" style="margin-left:auto">MCP v1</span>
+        </div>
+        <div class="arch-mcp-grid">
+          <div class="arch-mcp-item">
+            <div class="arch-mcp-item-name">📦 App Registry</div>
+            <div class="arch-mcp-item-desc">In-memory store of all 30k+ apps parsed from the S3 CSV at boot. Cached for the session lifetime.</div>
+          </div>
+          <div class="arch-mcp-item">
+            <div class="arch-mcp-item-name">🔌 Admin Panel Client</div>
+            <div class="arch-mcp-item-desc">Axios singleton for live calls — getNativeApp, GetNativeAppGroupSettings, getAppBuildQueue.</div>
+          </div>
+          <div class="arch-mcp-item">
+            <div class="arch-mcp-item-name">⚡ Bitrise Client</div>
+            <div class="arch-mcp-item-desc">Triggers iOS/Android builds on Bitrise. Auth via <code style="font-size:10.5px;color:var(--cyan)">BITRISE_TOKEN</code>.</div>
+          </div>
+          <div class="arch-mcp-item">
+            <div class="arch-mcp-item-name">🔧 Jenkins Client</div>
+            <div class="arch-mcp-item-desc">Triggers builds on Jenkins. Auth via HTTP Basic — URL + user + API key.</div>
+          </div>
+          <div class="arch-mcp-item">
+            <div class="arch-mcp-item-name">🛡️ Auth Guards</div>
+            <div class="arch-mcp-item-desc">Every tool validates credentials before executing. Throws structured McpError on failure.</div>
+          </div>
+          <div class="arch-mcp-item">
+            <div class="arch-mcp-item-name">🗂️ 11 MCP Tools</div>
+            <div class="arch-mcp-item-desc">10 read tools + 1 action tool — registered at startup, served over stdio or HTTP.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Arrow 4 → 5 ── -->
+      <div class="arch-arrow">
+        <div class="arch-arrow-line"></div>
+        <div class="arch-arrow-head"></div>
+        <div class="arch-arrow-label">MCP Protocol</div>
+      </div>
+
+      <!-- ── Layer 5: AI Agents ── -->
+      <div class="arch-agents-row">
+        <div class="arch-agent-chip"><span class="chip-dot"></span>Cursor</div>
+        <div class="arch-agent-chip"><span class="chip-dot"></span>Claude Desktop</div>
+        <div class="arch-agent-chip"><span class="chip-dot"></span>Claude.ai</div>
+        <div class="arch-agent-chip"><span class="chip-dot"></span>OpenAI Agents SDK</div>
+        <div class="arch-agent-chip"><span class="chip-dot"></span>LangChain</div>
+        <div class="arch-agent-chip"><span class="chip-dot"></span>n8n</div>
+        <div class="arch-agent-chip"><span class="chip-dot"></span>VS Code Copilot</div>
+      </div>
+
+      <!-- ── Legend ── -->
+      <div class="arch-legend">
+        <div class="arch-legend-item">
+          <div class="arch-legend-dot" style="background:var(--blue)"></div>
+          Persistent data store
+        </div>
+        <div class="arch-legend-item">
+          <div class="arch-legend-dot" style="background:var(--purple)"></div>
+          Internal Trainerize service
+        </div>
+        <div class="arch-legend-item">
+          <div class="arch-legend-dot" style="background:var(--gold)"></div>
+          Nightly snapshot · refreshes at 6 AM
+        </div>
+        <div class="arch-legend-item">
+          <div class="arch-legend-dot" style="background:var(--cyan)"></div>
+          MCP server (this project)
+        </div>
+        <div class="arch-legend-item">
+          <div class="arch-legend-dot" style="background:var(--green)"></div>
+          MCP-compatible AI agent
+        </div>
+      </div>
+
+    </div><!-- /arch-diagram -->
   </div>
 </section>
 
@@ -778,7 +1293,7 @@
         <div class="team-avatar" style="background: linear-gradient(135deg,#f5c842,#f97316); color:#07080d;">SJ</div>
         <div class="team-name">Sanghoon Jung</div>
         <div class="team-role role-lead">👑 Team Lead</div>
-        <p class="team-desc">Driving vision, architecture decisions, and keeping the team aligned on product goals.</p>
+        <p class="team-desc">Product vision, AWS infrastructure setup, S3 pipeline config, and keeping the team aligned on architecture decisions.</p>
         <div class="team-tag">@sanghoon</div>
       </div>
 
@@ -836,6 +1351,7 @@
       <ul>
         <li><a href="#tools">Read Tools (10)</a></li>
         <li><a href="#tools">Action Tools (1+)</a></li>
+        <li><a href="#architecture">Architecture</a></li>
         <li><a href="#integration">stdio Transport</a></li>
         <li><a href="#integration">HTTP Transport</a></li>
       </ul>
@@ -850,6 +1366,20 @@
     </div>
   </div>
 </footer>
+
+<!-- ═══════════════════════════════════════ SIDE PANEL ══════════ -->
+<div class="panel-backdrop" id="backdrop"></div>
+<div class="side-panel" id="sidePanel">
+  <div class="panel-header" id="panelHeader">
+    <div class="panel-tool-icon" id="panelIcon"></div>
+    <div>
+      <div class="panel-tool-name" id="panelName"></div>
+      <div class="panel-tool-type" id="panelType"></div>
+    </div>
+    <button class="panel-close" id="panelClose">✕</button>
+  </div>
+  <div class="panel-body" id="panelBody"></div>
+</div>
 
 <!-- ═══════════════════════════════════════ SCRIPTS ══════════════ -->
 <script>
@@ -1104,6 +1634,253 @@ REP Society — com.trainerize.repsociety1
   // Re-init properly
   buildNav();
   showDemo(0);
+
+  /* ── Side Panel ────────────────────────────────────────────── */
+  const TOOLS = {
+    list_apps: {
+      icon: '📋', type: 'READ · requires ADMIN_PANEL_API_KEY',
+      desc: 'Returns a formatted list of all CBA apps in the in-memory registry. Optionally filter by product type. Results show bundle ID, display name, iOS/Android version, CBA status, and App Store state.',
+      params: [
+        { name: 'app_type', req: false, desc: 'Filter by product line: enterprise | studio | pro | abc. Omit to return all types.' }
+      ],
+      queries: [
+        { icon: '📋', text: 'List all enterprise apps' },
+        { icon: '📋', text: 'List all ABC studio apps' },
+        { icon: '📋', text: 'Show me all pro apps' },
+        { icon: '📋', text: 'List all apps' },
+      ],
+      note: 'Data is served from the in-memory app registry loaded from S3 on startup. Use <strong>query_apps</strong> for multi-field filtering.'
+    },
+    get_app_info: {
+      icon: '🔍', type: 'READ · requires ADMIN_PANEL_API_KEY',
+      desc: 'Returns comprehensive details for a single app by combining three sources: CSV registry (base metadata), getNativeApp API (live status, planCode, groupId), and GetNativeAppGroupSettings API (push cert expiry, store links, provisioning profile, theme config, CI flags). Gracefully degrades if live API is unavailable.',
+      params: [
+        { name: 'bundle_id', req: true, desc: 'Reverse-DNS bundle identifier, e.g. com.trainerize.peakfitness' }
+      ],
+      queries: [
+        { icon: '🔍', text: 'Give me all info about com.trainerize.peakfitness' },
+        { icon: '🔍', text: 'What Bitrise workflow does com.trainerize.abcplus use?' },
+        { icon: '🔍', text: 'Is the push cert for com.trainerize.eosfitness still valid?' },
+        { icon: '🔍', text: 'Show full details for com.trainerize.goodlifefitness' },
+      ],
+      note: 'Live API calls (getNativeApp + GetNativeAppGroupSettings) run in parallel and fail gracefully — you always get CSV data even if the live API is unreachable.'
+    },
+    get_ios_status: {
+      icon: '🍎', type: 'READ · requires ADMIN_PANEL_API_KEY',
+      desc: 'Returns the iOS App Store status for a specific app — current version from the CSV, App Store state (ReadyForSale / None), iOS membership status (Active / AgreementIsMissing / Expired), Apple account email, and last published date.',
+      params: [
+        { name: 'bundle_id', req: true, desc: 'Bundle ID of the app, e.g. com.trainerize.peakfitness' }
+      ],
+      queries: [
+        { icon: '🍎', text: 'Is com.trainerize.peakfitness live on the App Store?' },
+        { icon: '🍎', text: 'What\'s the iOS status of com.trainerize.eosfitness?' },
+        { icon: '🍎', text: 'Does com.trainerize.abcplus have AgreementIsMissing?' },
+        { icon: '🍎', text: 'What iOS version is com.trainerize.workoutanytime on?' },
+      ],
+      note: '<strong>iOS membership</strong> values: <strong>Active</strong> (healthy), <strong>AgreementIsMissing</strong> (blocks all new builds), <strong>Expired</strong> (subscription lapsed).'
+    },
+    get_android_status: {
+      icon: '🤖', type: 'READ · requires ADMIN_PANEL_API_KEY',
+      desc: 'Returns the Google Play Store status for a specific app — Android version, Play Store state (Published / None), Google Play account email, and whether a Play key is configured.',
+      params: [
+        { name: 'bundle_id', req: true, desc: 'Bundle ID of the app, e.g. com.trainerize.peakfitness' }
+      ],
+      queries: [
+        { icon: '🤖', text: 'What\'s the Android status of com.trainerize.workoutanytime?' },
+        { icon: '🤖', text: 'Is com.trainerize.peakfitness published on Google Play?' },
+        { icon: '🤖', text: 'Does com.trainerize.abcplus have a Play Store account?' },
+      ],
+      note: 'Play Store state values from the CSV: <strong>Published</strong>, <strong>None</strong>, or empty. A missing Play account means builds cannot be pushed to the Play Store.'
+    },
+    get_app_last_updated: {
+      icon: '📅', type: 'READ · requires ADMIN_PANEL_API_KEY',
+      desc: 'Returns the last iOS and Android publish dates for a specific app, with human-readable days-ago labels and a freshness rating: Fresh (< 30 days), Recent (< 90 days), Aging (< 180 days), or Stale (180+ days).',
+      params: [
+        { name: 'bundle_id', req: true, desc: 'Bundle ID of the app, e.g. com.trainerize.peakfitness' }
+      ],
+      queries: [
+        { icon: '📅', text: 'When was com.trainerize.peakfitness last updated?' },
+        { icon: '📅', text: 'How stale is com.trainerize.eosfitness?' },
+        { icon: '📅', text: 'Last release dates for com.trainerize.goodlifefitness' },
+      ],
+      note: 'Dates come from the CSV dump fields. <strong>Published</strong> maps to the last iOS release date; <strong>Created</strong> maps to the Android baseline date.'
+    },
+    get_pending_apps: {
+      icon: '⏳', type: 'READ · requires ADMIN_PANEL_API_KEY',
+      desc: 'Scans all apps and returns those stuck in publishing queues. Supports 4 queue types: PendingAppleSubmission (Submitted/ReceivedArtifacts), PendingAppleAgreement (Notified), MissingIOSMembership (AgreementIsMissing/Expired), PendingGooglePlayKey (no Play account).',
+      params: [
+        { name: 'queue', req: false, desc: 'Filter to a specific queue: PendingPublishList | PendingAppleSubmission | PendingAppleAgreement | MissingIOSMembership | PendingGooglePlayKey. Omit to see all queues.' }
+      ],
+      queries: [
+        { icon: '⏳', text: 'What apps are pending Apple review right now?' },
+        { icon: '⏳', text: 'Which apps are waiting for artwork?' },
+        { icon: '⏳', text: 'Which apps have a missing Google Play account?' },
+        { icon: '⏳', text: 'Show apps in the MissingIOSMembership queue' },
+        { icon: '⏳', text: 'What apps are stuck in publishing queues?' },
+      ],
+      note: 'An app can appear in multiple queues simultaneously — e.g. both <strong>MissingIOSMembership</strong> and <strong>PendingAppleAgreement</strong>.'
+    },
+    get_stale_apps: {
+      icon: '🕰️', type: 'READ · requires ADMIN_PANEL_API_KEY',
+      desc: 'Returns apps that have not shipped a new release within a configurable number of days. Filterable by app type and platform. Results are sorted by days since last update, oldest first.',
+      params: [
+        { name: 'days', req: false, desc: 'Staleness threshold in days. Default: 180.' },
+        { name: 'app_type', req: false, desc: 'Filter by type: enterprise | studio | pro | abc.' },
+        { name: 'platform', req: false, desc: 'Filter by platform: ios | android. Omit to check both.' }
+      ],
+      queries: [
+        { icon: '🕰️', text: 'Which enterprise apps haven\'t shipped in 6 months?' },
+        { icon: '🕰️', text: 'Show me stale studio apps older than 90 days' },
+        { icon: '🕰️', text: 'Which ABC apps are stale on iOS?' },
+        { icon: '🕰️', text: 'What apps haven\'t been updated in over a year?' },
+      ],
+      note: 'Staleness is calculated from the <strong>Published</strong> (iOS) and <strong>Created</strong> (Android) CSV fields against today\'s date.'
+    },
+    get_build_queue: {
+      icon: '🏗️', type: 'READ · requires ADMIN_PANEL_API_KEY',
+      desc: 'Queries the live Admin API build queue for a given platform and state. Returns the list of bundle IDs currently in that state — useful for monitoring CI/CD pipeline health.',
+      params: [
+        { name: 'platform', req: true, desc: 'Build platform: ios | android' },
+        { name: 'status', req: true, desc: 'Queue state: ReadyToBuild | Building | Built | Failed' }
+      ],
+      queries: [
+        { icon: '🏗️', text: 'What iOS apps are ready to build in the queue?' },
+        { icon: '🏗️', text: 'Show me apps currently building on Android' },
+        { icon: '🏗️', text: 'Which apps failed their last iOS build?' },
+        { icon: '🏗️', text: 'How many Android builds are in progress?' },
+      ],
+      note: 'This calls the live <strong>GET /v03/CBA/getAppBuildQueue</strong> endpoint — results reflect the real-time build queue state.'
+    },
+    query_apps: {
+      icon: '📊', type: 'READ · requires ADMIN_PANEL_API_KEY',
+      desc: 'Flexible report-style query across the full app registry. All filters are optional and AND-combined. Returns a formatted table including bundle ID, name, iOS/Android version, CBA status, App Store state, iOS membership, type, and business.',
+      params: [
+        { name: 'ios_version', req: false, desc: 'Exact iOS version to match, e.g. "8.16.0".' },
+        { name: 'android_version', req: false, desc: 'Exact Android version to match.' },
+        { name: 'status', req: false, desc: 'CBA lifecycle status: Published | WaitingForArtwork | Notified | Submitted | PendingPublish | Deactivated.' },
+        { name: 'ios_store_status', req: false, desc: 'Apple App Store state: ReadyForSale | None.' },
+        { name: 'ios_membership', req: false, desc: 'iOS membership status (partial match): AgreementIsMissing | Active | Expired.' },
+        { name: 'app_type', req: false, desc: 'Product type: enterprise | studio | pro | abc.' },
+        { name: 'business_type', req: false, desc: 'Business owner: "ABC" or "Trainerize".' },
+        { name: 'limit', req: false, desc: 'Max rows to return. Default: 200.' }
+      ],
+      queries: [
+        { icon: '📊', text: 'List all iOS 8.16.0 Published enterprise apps' },
+        { icon: '📊', text: 'Show me ABC apps that are WaitingForArtwork' },
+        { icon: '📊', text: 'Which Trainerize studio apps are ReadyForSale on iOS?' },
+        { icon: '📊', text: 'Which apps have AgreementIsMissing in iOS membership?' },
+        { icon: '📊', text: 'Top 20 apps with Android 8.12.0 and Published status' },
+      ],
+      note: 'All filters are <strong>AND-combined</strong>. Use <strong>ios_membership</strong> with value "AgreementIsMissing" to find all membership-blocked apps.'
+    },
+    check_cert_validity: {
+      icon: '🔐', type: 'READ · requires ADMIN_PANEL_API_KEY',
+      desc: 'Checks Apple push notification certificate and provisioning profile validity using GetNativeAppGroupSettings. Single-app mode returns full cert details. Bulk mode scans filtered apps and returns only those with certs expiring within the threshold (or already expired), sorted by severity.',
+      params: [
+        { name: 'bundle_id', req: false, desc: 'Bundle ID for single-app mode. Omit to run bulk scan.' },
+        { name: 'app_type', req: false, desc: 'Bulk scan filter: enterprise | studio | pro | abc.' },
+        { name: 'business_type', req: false, desc: 'Bulk scan filter: "ABC" or "Trainerize".' },
+        { name: 'expires_within_days', req: false, desc: 'Bulk mode threshold in days. Default: 60. Use 0 to show only already-expired.' },
+        { name: 'limit', req: false, desc: 'Max apps to scan in bulk mode. Default: 50, max: 100.' }
+      ],
+      queries: [
+        { icon: '🔐', text: 'Check cert validity for com.trainerize.peakfitness' },
+        { icon: '🔐', text: 'Which enterprise apps have push certs expiring in 30 days?' },
+        { icon: '🔐', text: 'Are there any expired push certs across ABC studio apps?' },
+        { icon: '🔐', text: 'Show all apps with certs expiring within 60 days' },
+      ],
+      note: 'Severity levels: <strong>💀 Expired</strong> (past expiry), <strong>🔴 Critical</strong> (≤30d), <strong>⚠️ Warning</strong> (≤60d), <strong>✅ Healthy</strong> (>60d). Bulk scan uses 5 concurrent API calls.'
+    },
+    trigger_app_build: {
+      icon: '⚡', type: 'ACTION · requires BITRISE_TOKEN or Jenkins credentials',
+      desc: 'Triggers an iOS or Android build on Bitrise or Jenkins for a given app. Returns the build ID, queue URL, and trigger timestamp. Phase 4 — implementation in progress.',
+      params: [
+        { name: 'bundle_id', req: true, desc: 'Bundle ID of the app to build.' },
+        { name: 'platform', req: true, desc: 'Build platform: ios | android | both.' },
+        { name: 'provider', req: false, desc: 'CI provider: bitrise (default) | jenkins.' },
+        { name: 'workflow', req: false, desc: 'Specific Bitrise workflow name. Uses app default if omitted.' }
+      ],
+      queries: [
+        { icon: '⚡', text: 'Trigger a Bitrise iOS build for com.trainerize.peakfitness' },
+        { icon: '⚡', text: 'Build Android for com.trainerize.abcplus on Jenkins' },
+        { icon: '⚡', text: 'Is the build for com.trainerize.peakfitness done yet?' },
+      ],
+      note: '⚠️ <strong>Phase 4 — in progress.</strong> Currently returns a stub response. Requires <strong>BITRISE_TOKEN</strong> (Bitrise) or <strong>JENKINS_URL + JENKINS_USER + JENKINS_API_KEY</strong> (Jenkins) in <code>.env</code>.'
+    },
+  };
+
+  function openPanel(toolKey) {
+    const tool = TOOLS[toolKey];
+    if (!tool) return;
+
+    document.getElementById('panelIcon').textContent = tool.icon;
+    document.getElementById('panelIcon').className = `panel-tool-icon ${toolKey === 'trigger_app_build' ? 'icon-action' : 'icon-read'}`;
+    document.getElementById('panelName').textContent = toolKey;
+    document.getElementById('panelType').textContent = tool.type;
+
+    const body = document.getElementById('panelBody');
+    body.innerHTML = `
+      <div>
+        <div class="panel-section-title">Description</div>
+        <div class="panel-desc">${tool.desc}</div>
+      </div>
+      <div>
+        <div class="panel-section-title">Parameters</div>
+        <div class="param-list">
+          ${tool.params.map(p => `
+            <div class="param-row">
+              <div>
+                <div class="param-name">${p.name}</div>
+                <div class="${p.req ? 'param-req' : 'param-opt'}">${p.req ? 'REQUIRED' : 'OPTIONAL'}</div>
+              </div>
+              <div class="param-desc">${p.desc}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div>
+        <div class="panel-section-title">Example prompts</div>
+        <div class="query-examples">
+          ${tool.queries.map(q => `
+            <div class="query-example">
+              <span class="qi">${q.icon}</span>
+              <span>"${q.text}"</span>
+              <button class="copy-btn" onclick="copyQuery(this, '${q.text.replace(/'/g, "\\'")}')">Copy</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      ${tool.note ? `<div class="panel-note">💡 ${tool.note}</div>` : ''}
+    `;
+
+    document.getElementById('sidePanel').classList.add('open');
+    document.getElementById('backdrop').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closePanel() {
+    document.getElementById('sidePanel').classList.remove('open');
+    document.getElementById('backdrop').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('.tool-card[data-tool]').forEach(card => {
+    card.addEventListener('click', () => openPanel(card.dataset.tool));
+  });
+  document.getElementById('panelClose').addEventListener('click', closePanel);
+  document.getElementById('backdrop').addEventListener('click', closePanel);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+  function copyQuery(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ Copied';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
 </script>
 </body>
 </html>
