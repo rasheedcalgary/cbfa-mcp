@@ -30,17 +30,18 @@ export function registerGetAndroidStatus(server: McpServer): void {
 
       const app = await getAppByBundleId(bundle_id);
 
-      const state = app.android_store_state.toLowerCase();
-      const isLive = state.includes("published") || state.includes("production");
+      const state = app.android_store_state.toLowerCase().replace(/\s/g, "");
+      const isLive = state === "published" || state === "production" || state === "readyforsale";
 
       const lines = [
         `Android Status — ${app.display_name} (${app.bundle_id})`,
         "─".repeat(60),
         "",
         `  Version:           ${app.android_version || "—"}`,
-        `  Play Store State:  ${app.android_store_state || "—"}  ${isLive ? "✓ Live" : "✗ Not live"}`,
-        `  Google Key Valid:  ${app.google_key_valid || "—"}`,
-        `  Last Updated:      ${app.last_android_updated || "—"}`,
+        `  Play Store Status: ${app.android_store_state || "—"}  ${isLive ? "✓ Live" : "✗ Not live"}`,
+        `  CBA Status:        ${app.status || "—"}`,
+        `  Play Account:      ${app.google_key_valid || "—"}`,
+        `  Last Published:    ${app.last_ios_updated || "—"}`,
         "",
         `Data dump: ${app.dump_date}`,
       ];

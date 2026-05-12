@@ -9,40 +9,50 @@
 
 /** A single Custom Branded App, as parsed from the data source. */
 export interface AppRecord {
-  /** Primary key — reverse-DNS bundle ID, e.g. "com.trainerize.peakfitness" */
+  /** Primary key — reverse-DNS bundle ID (CSV: Code) */
   bundle_id: string;
-  /** Human-readable app name shown in stores */
+  /** Human-readable app name (CSV: Name) */
   display_name: string;
-  /** Product line this app belongs to */
+  /** Product line: Enterprise | Studio | Pro (CSV: AppType, lowercased) */
   app_type: AppType;
-  /** Gym / business name */
+  /** Business owner — "ABC" or "Trainerize" (CSV: BusinessType) */
   team_name: string;
-  /** Gym group identifier */
+  /** Gym group identifier (CSV: GroupID) */
   group_id: string;
-  /** Apple account email (without @trainerize.com) */
+  /** Apple Store account email (CSV: AppleStoreAccount) */
   apple_id: string;
-  /** ABC sub-type, or "N/A" for non-ABC apps */
+  /** ABC sub-type, or "N/A" for non-ABC apps (CSV: AppType) */
   abc_app_type: string;
 
-  // ── iOS ──────────────────────────────────────────
+  // ── Overall CBA workflow status ───────────────────────────────
+  /** Overall CBA lifecycle status — Published | WaitingForArtwork | Notified |
+   *  Submitted | PendingPublish | ReceivedArtifacts | Deactivated (CSV: Status) */
+  status: string;
+
+  // ── iOS ──────────────────────────────────────────────────────
   ios_version: string;
+  /** Apple App Store status — ReadyForSale | None (CSV: IOSStoreStatus) */
   app_store_state: string;
+  /** Apple Store account email — repurposed from legacy apple_key_valid field (CSV: AppleStoreAccount) */
   apple_key_valid: string;
   watch_face: string;
 
-  // ── Android ──────────────────────────────────────
+  // ── Android ──────────────────────────────────────────────────
   android_version: string;
   android_store_state: string;
+  /** Google Play Store account email (CSV: PlayStoreAccount) */
   google_key_valid: string;
 
-  // ── Timestamps ───────────────────────────────────
+  // ── Timestamps ───────────────────────────────────────────────
+  /** Date app was published to App Store (CSV: Published) */
   last_ios_updated: string;
+  /** App creation date (CSV: Created) */
   last_android_updated: string;
 
-  // ── CI/CD ─────────────────────────────────────────
-  /** Bitrise workflow name mapped to this app */
+  // ── CI/CD ─────────────────────────────────────────────────────
+  /** Apple Team ID (CSV: TeamID) */
   bitrise_workflow: string;
-  /** ISO datetime when this CSV dump was generated */
+  /** Row creation date (CSV: Created) */
   dump_date: string;
 }
 

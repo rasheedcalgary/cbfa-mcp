@@ -37,47 +37,30 @@ const PENDING_QUEUES = [
 
 type PendingQueue = (typeof PENDING_QUEUES)[number];
 
-/** Returns true if the value indicates a valid key (truthy strings). */
-function isKeyValid(val: string): boolean {
-  const v = val.toLowerCase().trim();
-  return v === "true" || v === "yes" || v === "valid" || v === "1";
-}
 
 /** Classifies an app into whichever pending queues it belongs to. */
 function getPendingQueues(app: AppRecord): PendingQueue[] {
-  const iosState = app.app_store_state.toLowerCase();
-  const androidState = app.android_store_state.toLowerCase();
+  const cbaStatus = app.status; // Published | WaitingForArtwork | Notified | Submitted |
+                                // PendingPublish | ReceivedArtifacts | Deactivated
   const queues: PendingQueue[] = [];
 
-  // PendingAppleSubmission — in Apple's review pipeline
-  if (
-    iosState.includes("waiting for review") ||
-    iosState.includes("in review") ||
-    iosState.includes("pending apple submission") ||
-    iosState.includes("pending developer release")
-  ) {
+  // PendingAppleSubmission — submitted to Apple, awaiting review
+  if (cbaStatus === "Submitted" || cbaStatus === "ReceivedArtifacts") {
     queues.push("PendingAppleSubmission");
   }
 
-  // PendingAppleAgreement — blocked on a legal/contract issue
-  if (
-    iosState.includes("pending agreement") ||
-    iosState.includes("pending contract") ||
-    iosState.includes("removed from sale")
-  ) {
+  // PendingAppleAgreement — notified (waiting on Trainerize/Apple agreement step)
+  if (cbaStatus === "Notified") {
     queues.push("PendingAppleAgreement");
   }
 
-  // PendingPublishList — queued on Trainerize side, not yet submitted
-  if (
-    (iosState.includes("pending") || androidState.includes("pending")) &&
-    queues.length === 0
-  ) {
+  // PendingPublishList — queued on Trainerize side, not yet pushed to Apple
+  if (cbaStatus === "PendingPublish" || cbaStatus === "WaitingForArtwork") {
     queues.push("PendingPublishList");
   }
 
-  // PendingGooglePlayKey — missing or invalid Google Play service account key
-  if (app.google_key_valid && !isKeyValid(app.google_key_valid)) {
+  // PendingGooglePlayKey — no Play Store account configured
+  if (!app.google_key_valid || app.google_key_valid.trim() === "") {
     queues.push("PendingGooglePlayKey");
   }
 
