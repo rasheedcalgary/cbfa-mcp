@@ -11,6 +11,7 @@
 
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createServer } from "../server.js";
+import { logger } from "../logger.js";
 
 export async function startStdioTransport(): Promise<void> {
   const transport = new StdioServerTransport();
@@ -18,5 +19,5 @@ export async function startStdioTransport(): Promise<void> {
 
   await server.connect(transport);
 
-  console.error("[cba-mcp] stdio transport connected — waiting for agent.");
+  logger.info("stdio transport connected — waiting for agent.");
 }

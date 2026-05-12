@@ -18,13 +18,13 @@ import "dotenv/config";
 import { config, logConfigStatus } from "./config.js";
 import { startStdioTransport } from "./transport/stdio.js";
 import { startHttpTransport } from "./transport/http.js";
+import { logger } from "./logger.js";
 
 async function main(): Promise<void> {
-  console.error("[cba-mcp] Starting CBA MCP Server v0.1.0");
-  console.error(`[cba-mcp] Transport: ${config.transport}`);
+  logger.info(`Starting CBA MCP Server v0.1.0`);
+  logger.info(`Transport: ${config.transport}`);
   console.error("");
 
-  // Print credential status so missing keys are visible immediately
   logConfigStatus();
 
   if (config.transport === "http") {

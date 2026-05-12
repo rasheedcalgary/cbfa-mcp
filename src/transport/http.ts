@@ -18,11 +18,12 @@
  * Set TRANSPORT=http in your environment to activate this mode.
  */
 
-import express, { type Request, type Response } from "express";
+import express, { type Request, type Response, type NextFunction } from "express";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { createServer } from "../server.js";
 import { config } from "../config.js";
+import { logger } from "../logger.js";
 
 // ─── SSE Session Store ────────────────────────────────────────────────────────
 
@@ -38,6 +39,15 @@ export async function startHttpTransport(): Promise<void> {
   const app = express();
 
   app.use(express.json());
+
+  // ── Request logger middleware ──────────────────────────────────────────────
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const start = Date.now();
+    res.on("finish", () => {
+      logger.httpRequest(req.method, req.path, res.statusCode, Date.now() - start);
+    });
+    next();
+  });
 
   // ── Health check ──────────────────────────────────────────────────────────
   app.get("/health", (_req: Request, res: Response) => {
