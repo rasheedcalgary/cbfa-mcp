@@ -1,0 +1,36 @@
+# ── Dependencies ──────────────────────────────────
+node_modules/
+
+# ── Build output ──────────────────────────────────
+dist/
+build/
+*.js.map
+*.d.ts.map
+
+# ── Environment / Secrets ─────────────────────────
+# NEVER commit credentials
+.env
+.env.local
+.env.*.local
+
+# ── OS files ──────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Editor / IDE ──────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Logs ──────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+
+# ── TypeScript cache ──────────────────────────────
+*.tsbuildinfo
+
+# ── Test coverage ─────────────────────────────────
+coverage/
+.nyc_output/
