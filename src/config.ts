@@ -1,9 +1,18 @@
 /**
  * Central configuration module.
  *
- * Reads all environment variables, applies defaults, and exposes a
- * single typed `config` object consumed throughout the application.
- * Call `logConfigStatus()` at startup to surface any missing keys.
+ * Environment variable ownership:
+ *
+ *   FROM SERVER .env (operator-managed infra — never exposed to users):
+ *     TRANSPORT, PORT, ADMIN_PANEL_DOMAIN,
+ *     BITRISE_TOKEN, JENKINS_URL, JENKINS_USER, JENKINS_API_KEY,
+ *     AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, S3_BUCKET, S3_KEY
+ *
+ *   FROM USER'S mcp.json env block (the only thing end users configure):
+ *     ADMIN_PANEL_API_KEY
+ *
+ * dotenv loads the server .env first. The user's ADMIN_PANEL_API_KEY arrives
+ * via the mcp.json env block and is merged in by the agent runtime — no conflict.
  */
 
 import "dotenv/config";
@@ -11,24 +20,26 @@ import "dotenv/config";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface Config {
-  /** MCP transport mode: "stdio" for local agents, "http" for remote agents */
+  /** MCP transport mode — set in server .env. "stdio" (default) or "http". */
   transport: "stdio" | "http";
-  /** HTTP server port — only relevant when transport === "http" */
+  /** HTTP port — set in server .env. Only used when transport === "http". */
   port: number;
 
   // ── Admin Panel ─────────────────────────────────
+  /** User-supplied via mcp.json env block. The only user-facing credential. */
   adminPanelApiKey: string | undefined;
+  /** Operator-supplied via server .env. Base URL for the Admin Panel API. */
   adminPanelDomain: string | undefined;
 
-  // ── Bitrise ─────────────────────────────────────
+  // ── Bitrise — operator-supplied via server .env ──
   bitriseToken: string | undefined;
 
-  // ── Jenkins ─────────────────────────────────────
+  // ── Jenkins — operator-supplied via server .env ──
   jenkinsUrl: string | undefined;
   jenkinsUser: string | undefined;
   jenkinsApiKey: string | undefined;
 
-  // ── AWS / S3 ────────────────────────────────────
+  // ── AWS / S3 — operator-supplied via server .env ─
   awsAccessKeyId: string | undefined;
   awsSecretAccessKey: string | undefined;
   awsRegion: string;
@@ -42,8 +53,8 @@ export const config: Config = {
   transport: (process.env.TRANSPORT as "stdio" | "http") ?? "stdio",
   port: parseInt(process.env.PORT ?? "3000", 10),
 
-  adminPanelApiKey: process.env.ADMIN_PANEL_API_KEY,
-  adminPanelDomain: process.env.ADMIN_PANEL_DOMAIN,
+  adminPanelApiKey: process.env.ADMIN_PANEL_API_KEY,   // user-supplied
+  adminPanelDomain: process.env.ADMIN_PANEL_DOMAIN,    // server .env
 
   bitriseToken: process.env.BITRISE_TOKEN,
 
@@ -65,28 +76,24 @@ export const config: Config = {
  * Uses stderr so it doesn't pollute the MCP stdio JSON stream.
  */
 export function logConfigStatus(): void {
-  const checks: Array<{ label: string; ok: boolean }> = [
-    { label: "ADMIN_PANEL_API_KEY (read tools)", ok: !!config.adminPanelApiKey },
-    { label: "ADMIN_PANEL_DOMAIN   (read tools)", ok: !!config.adminPanelDomain },
-    { label: "BITRISE_TOKEN        (action tools)", ok: !!config.bitriseToken },
-    {
-      label: "JENKINS credentials  (action tools)",
-      ok: !!(config.jenkinsUrl && config.jenkinsUser && config.jenkinsApiKey),
-    },
-    {
-      label: "AWS credentials      (data layer)",
-      ok: !!(config.awsAccessKeyId && config.awsSecretAccessKey),
-    },
-    {
-      label: "S3 path              (data layer)",
-      ok: !!(config.s3Bucket && config.s3Key),
-    },
+  const infraChecks: Array<{ label: string; ok: boolean }> = [
+    { label: "ADMIN_PANEL_DOMAIN   (server .env)", ok: !!config.adminPanelDomain },
+    { label: "BITRISE_TOKEN        (server .env)", ok: !!config.bitriseToken },
+    { label: "JENKINS credentials  (server .env)", ok: !!(config.jenkinsUrl && config.jenkinsUser && config.jenkinsApiKey) },
+    { label: "AWS credentials      (server .env)", ok: !!(config.awsAccessKeyId && config.awsSecretAccessKey) },
+    { label: "S3 path              (server .env)", ok: !!(config.s3Bucket && config.s3Key) },
   ];
 
   const pad = (s: string) => s.padEnd(44);
-  console.error("[cba-mcp] Credential status:");
-  for (const { label, ok } of checks) {
+
+  console.error("[cba-mcp] Server infra credentials (.env):");
+  for (const { label, ok } of infraChecks) {
     console.error(`  ${ok ? "✓" : "✗"} ${pad(label)} ${ok ? "configured" : "MISSING"}`);
   }
+
+  // ADMIN_PANEL_API_KEY is user-supplied — only warn if absent, don't fail startup
+  console.error("");
+  console.error("[cba-mcp] User credential (mcp.json env block):");
+  console.error(`  ${config.adminPanelApiKey ? "✓" : "✗"} ${"ADMIN_PANEL_API_KEY".padEnd(44)} ${config.adminPanelApiKey ? "present" : "not set — users must provide this"}`);
   console.error("");
 }

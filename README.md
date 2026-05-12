@@ -36,27 +36,23 @@ cd cbfa-mcp
 npm install
 ```
 
-### 2. Configure credentials
+### 2. Configure server credentials
 
 ```bash
 cp .env.example .env
-# Edit .env and fill in your keys
+# Edit .env — this is the server's infra config (operator only)
 ```
 
-**User-provided** (the only key end users need to set):
+All infrastructure credentials live in the server's `.env` file:
 
-| Variable | Required for | Where to get it |
-|---|---|---|
-| `ADMIN_PANEL_API_KEY` | All read tools | Your Trainerize Admin Panel API key |
-
-**Operator-loaded** (pre-configured in `mcp.json` by the server admin — users don't touch these):
-
-| Variable | Required for |
+| Variable | Purpose |
 |---|---|
 | `ADMIN_PANEL_DOMAIN` | Base URL for the Admin Panel API |
-| `BITRISE_TOKEN` | `trigger_app_build`, `get_build_status` |
+| `BITRISE_TOKEN` | Bitrise build tools |
 | `JENKINS_URL` + `JENKINS_USER` + `JENKINS_API_KEY` | Jenkins build tools |
 | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` + `S3_BUCKET` + `S3_KEY` | CSV data layer |
+
+`ADMIN_PANEL_API_KEY` is **not** in `.env` — it is the only credential that each end user supplies themselves (see Step 4).
 
 ### 3. Build
 
@@ -68,9 +64,7 @@ npm run build
 
 **Cursor / Claude Desktop (stdio)**
 
-Add to `~/.cursor/mcp.json` (or `claude_desktop_config.json`).
-
-`ADMIN_PANEL_API_KEY` is the only value each user sets themselves. Everything else is filled in once by the server operator.
+Share this snippet with each user. `ADMIN_PANEL_API_KEY` is the **only** value they need to fill in — all server-side credentials are already baked into the deployed server.
 
 ```json
 {
@@ -79,14 +73,7 @@ Add to `~/.cursor/mcp.json` (or `claude_desktop_config.json`).
       "command": "node",
       "args": ["/absolute/path/to/cbfa-mcp/dist/index.js"],
       "env": {
-        "ADMIN_PANEL_API_KEY": "your-api-key",
-        "ADMIN_PANEL_DOMAIN": "https://your-admin-panel.trainerize.com",
-        "BITRISE_TOKEN": "your-bitrise-token",
-        "AWS_ACCESS_KEY_ID": "your-aws-key-id",
-        "AWS_SECRET_ACCESS_KEY": "your-aws-secret",
-        "AWS_REGION": "us-east-1",
-        "S3_BUCKET": "your-bucket-name",
-        "S3_KEY": "path/to/cba_apps_dump.csv"
+        "ADMIN_PANEL_API_KEY": "your-api-key"
       }
     }
   }

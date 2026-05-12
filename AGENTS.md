@@ -156,17 +156,34 @@ The registry loads the CSV from S3 on first call and caches it in memory.
 
 ## Environment variables
 
-All env vars are read once in `src/config.ts` and exposed via the `config` object.
+Two separate sources — never mix them:
+
+**Server `.env`** (operator-managed infra, loaded by `dotenv/config` at startup):
+```
+TRANSPORT, PORT,
+ADMIN_PANEL_DOMAIN,
+BITRISE_TOKEN,
+JENKINS_URL, JENKINS_USER, JENKINS_API_KEY,
+AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, S3_BUCKET, S3_KEY
+```
+
+**User's `mcp.json` env block** (the only thing end users configure):
+```
+ADMIN_PANEL_API_KEY
+```
+
+All vars are read once in `src/config.ts` and exposed via the `config` object.
 Never call `process.env` directly outside of `config.ts`.
 
 ```typescript
 import { config } from "../config.js";
-config.bitriseToken   // string | undefined
-config.adminPanelDomain  // string | undefined
+config.adminPanelApiKey   // string | undefined  ← from user's mcp.json
+config.adminPanelDomain   // string | undefined  ← from server .env
+config.bitriseToken       // string | undefined  ← from server .env
 ```
 
-`logConfigStatus()` prints a credential checklist to stderr at startup — useful for
-diagnosing missing keys without exposing values.
+`logConfigStatus()` prints a two-section checklist to stderr at startup — one section
+for server infra vars, one for the user-supplied API key.
 
 ---
 
