@@ -19,6 +19,7 @@ import { registerGetAppLastUpdated } from "./read/get-app-last-updated.js";
 import { registerGetPendingApps } from "./read/get-pending-apps.js";
 import { registerGetStaleApps } from "./read/get-stale-apps.js";
 import { registerGetBuildQueue } from "./read/get-build-queue.js";
+import { registerQueryApps } from "./read/query-apps.js";
 
 // Action tools
 import { registerTriggerAppBuild } from "./action/trigger-build.js";
@@ -38,6 +39,7 @@ export function registerAllTools(server: McpServer): void {
   registerGetPendingApps(server);
   registerGetStaleApps(server);
   registerGetBuildQueue(server);
+  registerQueryApps(server);
 
   // ── Action tools (Bitrise / Jenkins API keys) ─────────────────────────────
   registerTriggerAppBuild(server);

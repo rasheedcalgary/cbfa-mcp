@@ -40,27 +40,46 @@ export function parseCsv(csvContent: string): AppRecord[] {
 
 /**
  * Maps a raw CSV row (string dict) to a typed AppRecord.
- * Unknown app_type values default to "enterprise".
+ *
+ * Actual CSV headers (as dumped from the Admin Panel):
+ *   ID, Name, Code, Status, GroupID, iTuneID, AppType, BusinessType,
+ *   AppleStoreAccount, PlayStoreAccount, Created, WaitingForArtwork,
+ *   ArtworkReceived, Submitted, PendingToPublish, Published,
+ *   AndroidVersion, AndroidStoreStatus, iOSVersion, AppleStoreVersion,
+ *   TeamID, IOSStoreStatus, IOSMembership
  */
 function mapRowToAppRecord(row: Record<string, string>): AppRecord {
+  const rawType = (row["AppType"] ?? "").toLowerCase();
+  const appType: AppRecord["app_type"] =
+    rawType === "enterprise" ? "enterprise"
+    : rawType === "studio"   ? "studio"
+    : rawType === "pro"      ? "pro"
+    : rawType === "abc"      ? "abc"
+    : "enterprise";
+
   return {
-    bundle_id: row["bundle_id"] ?? "",
-    display_name: row["display_name"] ?? "",
-    app_type: (row["app_type"] as AppRecord["app_type"]) ?? "enterprise",
-    team_name: row["team_name"] ?? "",
-    group_id: row["group_id"] ?? "",
-    apple_id: row["apple_id"] ?? "",
-    abc_app_type: row["abc_app_type"] ?? "N/A",
-    ios_version: row["ios_version"] ?? "",
-    app_store_state: row["app_store_state"] ?? "",
-    apple_key_valid: row["apple_key_valid"] ?? "",
-    watch_face: row["watch_face"] ?? "",
-    android_version: row["android_version"] ?? "",
-    android_store_state: row["android_store_state"] ?? "",
-    google_key_valid: row["google_key_valid"] ?? "",
-    last_ios_updated: row["last_ios_updated"] ?? "",
-    last_android_updated: row["last_android_updated"] ?? "",
-    bitrise_workflow: row["bitrise_workflow"] ?? "",
-    dump_date: row["dump_date"] ?? "",
+    bundle_id:            row["Code"]              ?? "",
+    display_name:         row["Name"]              ?? "",
+    app_type:             appType,
+    team_name:            row["BusinessType"]      ?? "",
+    group_id:             row["GroupID"]           ?? "",
+    apple_id:             row["AppleStoreAccount"] ?? "",
+    abc_app_type:         row["AppType"]           ?? "N/A",
+    status:               row["Status"]            ?? "",
+
+    ios_version:          row["iOSVersion"]        ?? "",
+    app_store_state:      row["IOSStoreStatus"]    ?? "",
+    apple_key_valid:      row["AppleStoreAccount"] ?? "",
+    watch_face:           "",
+
+    android_version:      row["AndroidVersion"]    ?? "",
+    android_store_state:  row["AndroidStoreStatus"] ?? "",
+    google_key_valid:     row["PlayStoreAccount"]  ?? "",
+
+    last_ios_updated:     row["Published"]         ?? "",
+    last_android_updated: row["Created"]           ?? "",
+
+    bitrise_workflow:     row["TeamID"]            ?? "",
+    dump_date:            row["Created"]           ?? "",
   };
 }

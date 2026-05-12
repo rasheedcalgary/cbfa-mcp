@@ -30,19 +30,19 @@ export function registerGetIosStatus(server: McpServer): void {
 
       const app = await getAppByBundleId(bundle_id);
 
-      // Derive a simple live/not-live flag from the App Store state
-      const state = app.app_store_state.toLowerCase();
-      const isLive = state.includes("ready for sale") || state.includes("published");
+      // IOSStoreStatus values from Apple: "ReadyForSale", "None", etc.
+      const state = app.app_store_state.toLowerCase().replace(/\s/g, "");
+      const isLive = state === "readyforsale" || app.status.toLowerCase() === "published";
 
       const lines = [
         `iOS Status — ${app.display_name} (${app.bundle_id})`,
         "─".repeat(60),
         "",
         `  Version:          ${app.ios_version || "—"}`,
-        `  App Store State:  ${app.app_store_state || "—"}  ${isLive ? "✓ Live" : "✗ Not live"}`,
-        `  Apple Key Valid:  ${app.apple_key_valid || "—"}`,
+        `  App Store Status: ${app.app_store_state || "—"}  ${isLive ? "✓ Live" : "✗ Not live"}`,
+        `  CBA Status:       ${app.status || "—"}`,
         `  Apple Account:    ${app.apple_id || "—"}`,
-        `  Last Updated:     ${app.last_ios_updated || "—"}`,
+        `  Last Published:   ${app.last_ios_updated || "—"}`,
         "",
         `Data dump: ${app.dump_date}`,
       ];
