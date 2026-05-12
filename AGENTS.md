@@ -269,9 +269,9 @@ npm run start:http   # run built dist (HTTP)
 {
   "mcpServers": {
     "cba-mcp": {
-      "command": "node",
-      "args": ["/absolute/path/to/cbfa-mcp/dist/index.js"],
-      "env": { "ADMIN_PANEL_API_KEY": "...", "BITRISE_TOKEN": "..." }
+      "command": "npm",
+      "args": ["--prefix", "/absolute/path/to/cbfa-mcp", "start"],
+      "env": { "ADMIN_PANEL_API_KEY": "your-api-key" }
     }
   }
 }

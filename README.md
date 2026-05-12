@@ -70,9 +70,8 @@ Share this snippet with each user. `ADMIN_PANEL_API_KEY` is the **only** value t
 {
   "mcpServers": {
     "cba-mcp": {
-      "command": "node",
-      "args": ["/absolute/path/to/cbfa-mcp/dist/index.js"],
-      "cwd": "/absolute/path/to/cbfa-mcp",
+      "command": "npm",
+      "args": ["--prefix", "/absolute/path/to/cbfa-mcp", "start"],
       "env": {
         "ADMIN_PANEL_API_KEY": "your-api-key"
       }
@@ -81,7 +80,7 @@ Share this snippet with each user. `ADMIN_PANEL_API_KEY` is the **only** value t
 }
 ```
 
-`cwd` must point to the project root so the server can locate its `.env` file. All AWS/S3, Bitrise, and Jenkins credentials are loaded from that file automatically — users never set them.
+Replace `/absolute/path/to/cbfa-mcp` with the actual project root (the single path you need to provide). `npm --prefix` sets the working directory automatically, so the server locates its `.env` file and loads all AWS/S3, Bitrise, and Jenkins credentials without any user configuration.
 
 **Remote agents (HTTP)**
 
