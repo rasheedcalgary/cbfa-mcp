@@ -86,3 +86,88 @@ export interface McpTextContent {
   type: "text";
   text: string;
 }
+
+// ─── Trainerize Admin API Response Types ──────────────────────────────────────
+
+/**
+ * Response from POST /v03/sys/getNativeApp
+ * Returns live app metadata keyed by appCode (bundle ID).
+ */
+export interface GetNativeAppResponse {
+  appName: string;
+  appCode: string;
+  appType: string;
+  status: string;
+  planCode: number;
+  downgradeDate: string | null;
+  groupId: number;
+  businessType: string;
+  appleStoreAccount: string;
+  playStoreAccount: string;
+}
+
+/**
+ * Deep settings object returned by GET /v03/CBA/GetNativeAppGroupSettings
+ */
+export interface NativeAppGroupSettings {
+  groupID: number;
+  nativeAppID: number;
+  nativeAppName: string;
+  appDescription: string;
+  nativeAppCode: string;
+  iOSID: string;
+  created: string;
+  pushNotificationExpiryDate: string;
+  iOSStoreLink: string;
+  androidStoreLink: string;
+  appType: string;
+  appStatus: string;
+  appRebrandStatus: string;
+  appleStoreAccount: string;
+  playStoreAccount: string;
+  androidDisplayName: string;
+  className: string;
+  marketUrl: string;
+  appBarMode: string;
+  loginMode: string;
+  signinButtonTheme: string;
+  appThemeMode: string;
+  launchScreenBackgroundColor: string;
+  showWatchFaceDownload: boolean;
+  androidProjectID: number;
+  useNewAndroidKey: boolean;
+  supportEmail: string;
+  fAQclientLink: string;
+  fAQtrainerLink: string;
+  videoGuideClientLink: string;
+  videoGuideTrainerLink: string;
+  videoGuideAdminLink: string;
+  loginHelpEmail: string;
+  loginHelpPhone: string;
+  profileUUID: string;
+  profileName: string;
+  teamID: string;
+  teamName: string;
+  itcTeamID: number;
+  appStoreApiKey: string;
+  issuerID: string;
+  publishAfterApprove: boolean;
+  submitForReview: boolean;
+  skipMetadata: boolean;
+  whiteLabelAppType: string;
+  abcAppType: string;
+  figmaFileID: string;
+  proAndroidAccount: string;
+}
+
+export interface GetNativeAppGroupSettingsResponse {
+  settings: NativeAppGroupSettings;
+}
+
+/**
+ * Response from GET /v03/CBA/getAppBuildQueue
+ * Returns a list of app bundle IDs currently in the requested queue state.
+ */
+export interface GetAppBuildQueueResponse {
+  apps: string[];
+}

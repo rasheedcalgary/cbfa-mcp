@@ -91,9 +91,5 @@ export function logConfigStatus(): void {
     console.error(`  ${ok ? "✓" : "✗"} ${pad(label)} ${ok ? "configured" : "MISSING"}`);
   }
 
-  // ADMIN_PANEL_API_KEY is user-supplied — only warn if absent, don't fail startup
-  console.error("");
-  console.error("[cba-mcp] User credential (mcp.json env block):");
-  console.error(`  ${config.adminPanelApiKey ? "✓" : "✗"} ${"ADMIN_PANEL_API_KEY".padEnd(44)} ${config.adminPanelApiKey ? "present" : "not set — users must provide this"}`);
   console.error("");
 }
