@@ -168,39 +168,6 @@ Which enterprise apps have an iOS membership issue?
 
 ---
 
-## Status reference
-
-### CBA lifecycle (`status`)
-
-| Value | Meaning |
-|---|---|
-| `Published` | Live on both stores |
-| `PendingPublish` | Queued for Trainerize publish |
-| `WaitingForArtwork` | Waiting on artwork before build |
-| `Submitted` | Pending Apple review |
-| `Notified` | Awaiting Apple agreement |
-| `Deactivated` | Decommissioned |
-
-### iOS App Store (`ios_store_status`)
-
-| Value | Meaning |
-|---|---|
-| `ReadyForSale` | Live on the App Store |
-| `None` | Not submitted or removed |
-| `DeveloperRemovedFromSale` | Pulled by developer |
-| `PendingDeveloperRelease` | Approved, awaiting manual release |
-
-### iOS Membership (`ios_membership`)
-
-| Value | Meaning |
-|---|---|
-| `Active` | Apple Developer Program membership is valid |
-| `AgreementIsMissing` | Required Apple agreement not signed — blocks all new builds and submissions |
-| `Expired` | Apple Developer Program subscription has lapsed |
-| *(empty)* | Membership status not tracked for this app |
-
----
-
 ## Development
 
 ```bash
