@@ -32,6 +32,7 @@ const PENDING_QUEUES = [
   "PendingPublishList",
   "PendingAppleSubmission",
   "PendingAppleAgreement",
+  "MissingIOSMembership",
   "PendingGooglePlayKey",
 ] as const;
 
@@ -54,6 +55,11 @@ function getPendingQueues(app: AppRecord): PendingQueue[] {
     queues.push("PendingAppleAgreement");
   }
 
+  // MissingIOSMembership — Apple Developer Program membership issue (AgreementIsMissing, Expired, etc.)
+  if (app.ios_membership && app.ios_membership.toLowerCase() !== "active" && app.ios_membership.trim() !== "") {
+    queues.push("MissingIOSMembership");
+  }
+
   // PendingPublishList — queued on Trainerize side, not yet pushed to Apple
   if (cbaStatus === "PendingPublish" || cbaStatus === "WaitingForArtwork") {
     queues.push("PendingPublishList");
@@ -68,13 +74,14 @@ function getPendingQueues(app: AppRecord): PendingQueue[] {
 }
 
 function formatAppRow(app: AppRecord): string {
-  return `  ${app.bundle_id.padEnd(50)} ${app.display_name.padEnd(30)} (${app.app_type})`;
+  const membership = app.ios_membership ? ` [${app.ios_membership}]` : "";
+  return `  ${app.bundle_id.padEnd(50)} ${app.display_name.padEnd(30)} (${app.app_type})${membership}`;
 }
 
 export function registerGetPendingApps(server: McpServer): void {
   server.tool(
     "get_pending_apps",
-    "List all CBA apps stuck in a publishing queue — pending publish, Apple review, Apple agreement, or missing Google Play key.",
+    "List all CBA apps stuck in a publishing queue — pending publish, Apple review, Apple agreement, missing iOS membership (AgreementIsMissing), or missing Google Play key.",
     {
       queue: z
         .enum(PENDING_QUEUES)

@@ -70,6 +70,7 @@ function mapRowToAppRecord(row: Record<string, string>): AppRecord {
     ios_version:          row["iOSVersion"]        ?? "",
     app_store_state:      row["IOSStoreStatus"]    ?? "",
     apple_key_valid:      row["AppleStoreAccount"] ?? "",
+    ios_membership:       row["IOSMembership"]     ?? "",
     watch_face:           "",
 
     android_version:      row["AndroidVersion"]    ?? "",

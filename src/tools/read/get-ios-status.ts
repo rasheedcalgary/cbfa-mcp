@@ -41,6 +41,7 @@ export function registerGetIosStatus(server: McpServer): void {
         `  Version:          ${app.ios_version || "—"}`,
         `  App Store Status: ${app.app_store_state || "—"}  ${isLive ? "✓ Live" : "✗ Not live"}`,
         `  CBA Status:       ${app.status || "—"}`,
+        `  iOS Membership:   ${app.ios_membership || "—"}`,
         `  Apple Account:    ${app.apple_id || "—"}`,
         `  Last Published:   ${app.last_ios_updated || "—"}`,
         "",

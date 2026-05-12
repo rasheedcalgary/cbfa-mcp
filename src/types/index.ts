@@ -35,6 +35,8 @@ export interface AppRecord {
   app_store_state: string;
   /** Apple Store account email — repurposed from legacy apple_key_valid field (CSV: AppleStoreAccount) */
   apple_key_valid: string;
+  /** Apple Developer Program membership status — AgreementIsMissing | Active | Expired | etc. (CSV: IOSMembership) */
+  ios_membership: string;
   watch_face: string;
 
   // ── Android ──────────────────────────────────────────────────

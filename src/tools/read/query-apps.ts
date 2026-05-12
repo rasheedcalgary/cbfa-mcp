@@ -11,6 +11,7 @@
  *                      Notified | Submitted | PendingPublish |
  *                      ReceivedArtifacts | Deactivated
  *   ios_store_status — Apple store status: ReadyForSale | None
+ *   ios_membership   — Apple membership status: AgreementIsMissing | Active | etc.
  *   app_type         — enterprise | studio | pro | abc
  *   business_type    — "ABC" or "Trainerize"
  *   limit            — max rows to return (default 200)
@@ -65,6 +66,10 @@ export function registerQueryApps(server: McpServer): void {
         .enum(IOS_STORE_STATUSES)
         .optional()
         .describe("Apple App Store status: ReadyForSale | None"),
+      ios_membership: z
+        .string()
+        .optional()
+        .describe("Apple Developer Program membership status, e.g. \"AgreementIsMissing\", \"Active\". Case-insensitive partial match."),
       app_type: z
         .enum(["enterprise", "studio", "pro", "abc"])
         .optional()
@@ -80,7 +85,7 @@ export function registerQueryApps(server: McpServer): void {
         .default(200)
         .describe("Maximum number of results to return. Defaults to 200."),
     },
-    async ({ ios_version, android_version, status, ios_store_status, app_type, business_type, limit }) => {
+    async ({ ios_version, android_version, status, ios_store_status, ios_membership, app_type, business_type, limit }) => {
       validateAdminPanelAuth();
 
       const allApps = await getAllApps(app_type as AppType | undefined);
@@ -92,6 +97,7 @@ export function registerQueryApps(server: McpServer): void {
         if (android_version  && app.android_version  !== android_version)  return false;
         if (status           && app.status           !== status)           return false;
         if (ios_store_status && app.app_store_state  !== ios_store_status) return false;
+        if (ios_membership   && !app.ios_membership.toLowerCase().includes(ios_membership.toLowerCase())) return false;
         if (business_type    && app.team_name.toLowerCase() !== business_type.toLowerCase()) return false;
         return true;
       });
@@ -100,7 +106,7 @@ export function registerQueryApps(server: McpServer): void {
       const shown = results.slice(0, limit);
 
       if (shown.length === 0) {
-        const filterDesc = buildFilterDesc({ ios_version, android_version, status, ios_store_status, app_type, business_type });
+        const filterDesc = buildFilterDesc({ ios_version, android_version, status, ios_store_status, ios_membership, app_type, business_type });
         return {
           content: [
             {
@@ -120,6 +126,7 @@ export function registerQueryApps(server: McpServer): void {
         "Android Ver".padEnd(12),
         "Status".padEnd(18),
         "Store".padEnd(14),
+        "Membership".padEnd(18),
         "Type".padEnd(10),
         "Business",
       ].join(" | ");
@@ -135,12 +142,13 @@ export function registerQueryApps(server: McpServer): void {
           (app.android_version || "—").padEnd(12),
           (app.status || "—").padEnd(18),
           (app.app_store_state || "—").padEnd(14),
+          (app.ios_membership || "—").padEnd(18),
           app.app_type.padEnd(10),
           app.team_name,
         ].join(" | ")
       );
 
-      const filterDesc = buildFilterDesc({ ios_version, android_version, status, ios_store_status, app_type, business_type });
+      const filterDesc = buildFilterDesc({ ios_version, android_version, status, ios_store_status, ios_membership, app_type, business_type });
       const truncNote = total > limit ? `  (showing first ${limit} of ${total})` : "";
 
       const lines = [
@@ -165,6 +173,7 @@ function buildFilterDesc(filters: {
   android_version?: string;
   status?: string;
   ios_store_status?: string;
+  ios_membership?: string;
   app_type?: string;
   business_type?: string;
 }): string {
@@ -173,6 +182,7 @@ function buildFilterDesc(filters: {
   if (filters.android_version)  parts.push(`Android=${filters.android_version}`);
   if (filters.status)           parts.push(`status=${filters.status}`);
   if (filters.ios_store_status) parts.push(`storeStatus=${filters.ios_store_status}`);
+  if (filters.ios_membership)   parts.push(`membership=${filters.ios_membership}`);
   if (filters.app_type)         parts.push(`type=${filters.app_type}`);
   if (filters.business_type)    parts.push(`business=${filters.business_type}`);
   return parts.join(", ");
