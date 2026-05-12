@@ -13,6 +13,7 @@ Built for the Trainerize CBA Hackathon, May 2026. · 🌐 **[Live docs →](http
 - ✅ Query every app's status, store state, and key validity
 - ✅ Filter by iOS/Android version, CBA status, App Store state, app type, and business type
 - ✅ Find apps stuck in publishing queues or overdue for a release
+- ✅ Check Apple push cert and provisioning profile expiry — single app or bulk scan
 - ✅ Flexible AND-filter reports across any combination of fields
 - ⏳ Trigger iOS/Android builds via Bitrise or Jenkins *(Phase 4)*
 
@@ -91,6 +92,7 @@ TRANSPORT=http npm start   # listens on :3000 (override with PORT=)
 | `get_stale_apps` | Apps not updated within a configurable threshold (default 180 days) |
 | `get_build_queue` | Live build queue state — ReadyToBuild / Building / Built / Failed |
 | `query_apps` | Flexible AND-filter report: version + status + store state + type + business |
+| `check_cert_validity` | Apple push cert + provisioning profile validity — single app or bulk scan with expiry threshold |
 
 ### ⏳ Action tools — require `BITRISE_TOKEN` or Jenkins credentials *(Phase 4 — in progress)*
 
@@ -146,6 +148,14 @@ List all iOS 8.16.0 Published enterprise apps
 Show me ABC apps that are WaitingForArtwork
 Which Trainerize studio apps are ReadyForSale on iOS?
 Top 20 apps with Android 8.12.0 and Published status
+```
+
+**Push cert & provisioning profiles (`check_cert_validity`)**
+```
+Check cert validity for com.trainerize.peakfitness
+Which enterprise apps have push certs expiring in the next 30 days?
+Are there any expired push certs across ABC studio apps?
+Show all apps with certs expiring within 60 days
 ```
 
 ---
@@ -206,9 +216,9 @@ Set it in your mcp.json env block:
 | 2 — Data layer | ✅ Done | S3 CSV downloader, parser, in-memory app registry |
 | 3 — Read tools | ✅ Done | All 9 read tools live with real data + Admin API integration |
 | 3.1 — Reports | ✅ Done | `query_apps` flexible filter tool + log redaction security |
+| 3.2 — Cert validity | ✅ Done | `check_cert_validity` — push cert + provisioning profile check via existing Admin API |
 | 4 — Action tools | ⏳ Pending | Bitrise + Jenkins build trigger/status |
-| 5 — Cert validity | 🔮 Post-MVP | Apple push cert + provisioning profile check |
-| 6 — Deploy | 🔮 Post-MVP | EC2 / Cloud Run with HTTP transport |
+| 5 — Deploy | 🔮 Post-MVP | EC2 / Cloud Run with HTTP transport |
 
 ---
 
