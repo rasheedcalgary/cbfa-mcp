@@ -1,10 +1,13 @@
 /**
  * Authentication validator.
  *
- * Each function checks that the credentials required for a specific
- * service are present in the environment. If not, it throws a
- * descriptive McpError so the agent receives an actionable message
- * instead of a silent failure.
+ * Credential ownership model:
+ *   - ADMIN_PANEL_API_KEY  → supplied by each end user (the only user-facing credential)
+ *   - Everything else      → pre-loaded by the server operator in the mcp.json env block
+ *                            (S3, Bitrise, Jenkins, Admin Panel domain)
+ *
+ * Each function checks that its required credentials are present in the environment.
+ * If not, it throws a descriptive McpError so the agent receives an actionable message.
  *
  * Call the appropriate validator at the TOP of every tool handler,
  * before any API work begins.
@@ -16,30 +19,22 @@ import { config } from "../config.js";
 // ─── Read Tools (Admin Panel) ─────────────────────────────────────────────────
 
 /**
- * Validates Admin Panel credentials.
+ * Validates that the user has provided their Admin Panel API key.
+ * ADMIN_PANEL_DOMAIN is a server-operator concern — not checked here.
+ *
  * Required by all read tools: list_apps, get_app_info, get_ios_status,
  * get_android_status, get_app_last_updated, get_pending_apps, get_stale_apps.
  */
 export function validateAdminPanelAuth(): void {
-  const missing: string[] = [];
-
-  if (!config.adminPanelApiKey) missing.push("ADMIN_PANEL_API_KEY");
-  if (!config.adminPanelDomain) missing.push("ADMIN_PANEL_DOMAIN");
-
-  if (missing.length === 0) return;
+  if (config.adminPanelApiKey) return;
 
   throw new McpError(
     ErrorCode.InvalidRequest,
     [
-      `Authentication failed — missing Admin Panel credentials: ${missing.join(", ")}.`,
+      "Authentication failed — ADMIN_PANEL_API_KEY is not set.",
       "",
-      "Read tools (list_apps, get_app_info, get_ios_status, etc.) require access to the",
-      "Trainerize Admin Panel API. Set the following in your .env or mcp.json env block:",
-      "",
-      "  ADMIN_PANEL_API_KEY=your-api-key",
-      "  ADMIN_PANEL_DOMAIN=https://your-admin-panel.trainerize.com",
-      "",
-      "See .env.example for the full template.",
+      "Please provide your Admin Panel API key via the ADMIN_PANEL_API_KEY environment variable.",
+      "All other server credentials are pre-configured — this is the only key you need to supply.",
     ].join("\n")
   );
 }
@@ -48,26 +43,19 @@ export function validateAdminPanelAuth(): void {
 
 /**
  * Validates Bitrise credentials.
- * Required by action tools when provider === "bitrise".
+ * These are server-operator credentials, pre-loaded in mcp.json.
+ * If missing it is a server configuration error, not a user error.
  */
 export function validateBitriseAuth(): void {
   if (config.bitriseToken) return;
 
   throw new McpError(
-    ErrorCode.InvalidRequest,
+    ErrorCode.InternalError,
     [
-      "Authentication failed — BITRISE_TOKEN is not configured.",
+      "Server configuration error — BITRISE_TOKEN is not configured.",
       "",
-      "Bitrise action tools (trigger_app_build, get_build_status) require a",
-      "Personal Access Token from your Bitrise account.",
-      "",
-      "How to get one:",
-      "  1. Log in to bitrise.io",
-      "  2. Go to Profile → Security → Personal Access Tokens",
-      "  3. Generate a new token with build read/write permissions",
-      "",
-      "Then set it in your .env or mcp.json env block:",
-      "  BITRISE_TOKEN=your-token-here",
+      "This is a server-side credential that should be pre-loaded by the operator.",
+      "Contact the server administrator to set BITRISE_TOKEN in the mcp.json env block.",
     ].join("\n")
   );
 }
@@ -76,7 +64,8 @@ export function validateBitriseAuth(): void {
 
 /**
  * Validates Jenkins credentials.
- * Required by action tools when provider === "jenkins".
+ * These are server-operator credentials, pre-loaded in mcp.json.
+ * If missing it is a server configuration error, not a user error.
  */
 export function validateJenkinsAuth(): void {
   const missing: string[] = [];
@@ -88,20 +77,12 @@ export function validateJenkinsAuth(): void {
   if (missing.length === 0) return;
 
   throw new McpError(
-    ErrorCode.InvalidRequest,
+    ErrorCode.InternalError,
     [
-      `Authentication failed — missing Jenkins credentials: ${missing.join(", ")}.`,
+      `Server configuration error — missing Jenkins credentials: ${missing.join(", ")}.`,
       "",
-      "Jenkins action tools require HTTP Basic Auth against your Jenkins instance.",
-      "",
-      "How to get a Jenkins API key:",
-      "  1. Log in to your Jenkins instance",
-      "  2. Go to <your-username> → Configure → API Token → Add new Token",
-      "",
-      "Then set the following in your .env or mcp.json env block:",
-      "  JENKINS_URL=https://your-jenkins.example.com",
-      "  JENKINS_USER=your-username",
-      "  JENKINS_API_KEY=your-api-token",
+      "These are server-side credentials that should be pre-loaded by the operator.",
+      "Contact the server administrator to set them in the mcp.json env block.",
     ].join("\n")
   );
 }
@@ -110,7 +91,8 @@ export function validateJenkinsAuth(): void {
 
 /**
  * Validates AWS credentials and S3 path.
- * Required by the data layer when fetching the CSV dump from S3.
+ * These are server-operator credentials, pre-loaded in mcp.json.
+ * If missing it is a server configuration error, not a user error.
  */
 export function validateAwsAuth(): void {
   const missing: string[] = [];
@@ -123,19 +105,12 @@ export function validateAwsAuth(): void {
   if (missing.length === 0) return;
 
   throw new McpError(
-    ErrorCode.InvalidRequest,
+    ErrorCode.InternalError,
     [
-      `Authentication failed — missing AWS/S3 credentials: ${missing.join(", ")}.`,
+      `Server configuration error — missing AWS/S3 credentials: ${missing.join(", ")}.`,
       "",
-      "The data layer downloads the CBA app dump from an S3 bucket.",
-      "Credentials need read-only S3 access to the cbfa-scripts bucket.",
-      "",
-      "Set the following in your .env or mcp.json env block:",
-      "  AWS_ACCESS_KEY_ID=your-key-id",
-      "  AWS_SECRET_ACCESS_KEY=your-secret",
-      "  AWS_REGION=us-east-1",
-      "  S3_BUCKET=your-bucket-name",
-      "  S3_KEY=path/to/cba_apps_dump.csv",
+      "These are server-side credentials that should be pre-loaded by the operator.",
+      "Contact the server administrator to set them in the mcp.json env block.",
     ].join("\n")
   );
 }

@@ -97,12 +97,16 @@ After creating the file, import and call the register function in `src/tools/reg
 
 ### 2. Auth guards — call at the top of every handler
 
-| Service | Validator | When to use |
-|---|---|---|
-| Admin Panel API | `validateAdminPanelAuth()` | All read tools |
-| Bitrise | `validateBitriseAuth()` | Action tools when `provider === "bitrise"` |
-| Jenkins | `validateJenkinsAuth()` | Action tools when `provider === "jenkins"` |
-| AWS / S3 | `validateAwsAuth()` | Data layer — already called inside `s3Client.ts` |
+Credential ownership model:
+- **`ADMIN_PANEL_API_KEY`** — the only user-supplied credential. Each end user sets this themselves.
+- **Everything else** — operator-supplied (S3, Bitrise, Jenkins, Admin Panel domain). Pre-loaded in `mcp.json` by the server admin. If these are missing it is a server configuration error (`ErrorCode.InternalError`), not a user error.
+
+| Service | Validator | Error code | Who fixes it |
+|---|---|---|---|
+| Admin Panel API key | `validateAdminPanelAuth()` | `InvalidRequest` | End user |
+| Bitrise | `validateBitriseAuth()` | `InternalError` | Server operator |
+| Jenkins | `validateJenkinsAuth()` | `InternalError` | Server operator |
+| AWS / S3 | `validateAwsAuth()` | `InternalError` | Server operator |
 
 Validators throw `McpError` with a multi-line human-readable message if credentials are
 missing or incomplete. Do not wrap them in try/catch — let them propagate.

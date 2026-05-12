@@ -43,14 +43,20 @@ cp .env.example .env
 # Edit .env and fill in your keys
 ```
 
+**User-provided** (the only key end users need to set):
+
 | Variable | Required for | Where to get it |
 |---|---|---|
-| `ADMIN_PANEL_API_KEY` | All read tools | Trainerize Admin Panel |
-| `ADMIN_PANEL_DOMAIN` | All read tools | e.g. `https://admin.trainerize.com` |
-| `BITRISE_TOKEN` | Build action tools | Bitrise → Profile → Security → Personal Access Tokens |
-| `JENKINS_URL` + `JENKINS_USER` + `JENKINS_API_KEY` | Jenkins build tools | Jenkins → Configure → API Token |
-| `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` | Data layer (CSV) | AWS IAM — read-only S3 |
-| `S3_BUCKET` + `S3_KEY` | Data layer (CSV) | Path to `cba_apps_dump.csv` in S3 |
+| `ADMIN_PANEL_API_KEY` | All read tools | Your Trainerize Admin Panel API key |
+
+**Operator-loaded** (pre-configured in `mcp.json` by the server admin — users don't touch these):
+
+| Variable | Required for |
+|---|---|
+| `ADMIN_PANEL_DOMAIN` | Base URL for the Admin Panel API |
+| `BITRISE_TOKEN` | `trigger_app_build`, `get_build_status` |
+| `JENKINS_URL` + `JENKINS_USER` + `JENKINS_API_KEY` | Jenkins build tools |
+| `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` + `S3_BUCKET` + `S3_KEY` | CSV data layer |
 
 ### 3. Build
 
@@ -71,11 +77,11 @@ Add to `~/.cursor/mcp.json` (or `claude_desktop_config.json`):
       "command": "node",
       "args": ["/absolute/path/to/cbfa-mcp/dist/index.js"],
       "env": {
-        "ADMIN_PANEL_API_KEY": "your-key",
+        "ADMIN_PANEL_API_KEY": "← each user sets their own key here",
         "ADMIN_PANEL_DOMAIN": "https://your-admin-panel.trainerize.com",
-        "BITRISE_TOKEN": "your-token",
-        "AWS_ACCESS_KEY_ID": "your-key-id",
-        "AWS_SECRET_ACCESS_KEY": "your-secret",
+        "BITRISE_TOKEN": "← operator pre-loads this",
+        "AWS_ACCESS_KEY_ID": "← operator pre-loads this",
+        "AWS_SECRET_ACCESS_KEY": "← operator pre-loads this",
         "AWS_REGION": "us-east-1",
         "S3_BUCKET": "your-bucket",
         "S3_KEY": "path/to/cba_apps_dump.csv"
