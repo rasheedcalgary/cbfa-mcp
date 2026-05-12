@@ -1,0 +1,265 @@
+# AGENTS.md — CBA-MCP Codebase Guide for AI Agents
+
+This file gives AI coding assistants (Cursor, Claude, Copilot, etc.) the full context
+needed to work effectively on this repository. Read this before making any changes.
+
+---
+
+## What this project is
+
+**CBA-MCP** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server
+for the Trainerize **Custom Branded Apps (CBA)** platform. It exposes 9 tools that let
+AI agents query app status, publishing queues, build pipelines, and trigger CI/CD jobs
+— all via natural language.
+
+Built in TypeScript using the official `@modelcontextprotocol/sdk`. Supports two transports:
+- **stdio** — for local agents (Cursor, Claude Desktop). Default.
+- **HTTP** — for remote agents (OpenAI Agents SDK, LangChain, n8n). Set `TRANSPORT=http`.
+
+---
+
+## Repository layout
+
+```
+cbfa-mcp/
+├── src/
+│   ├── index.ts              ← Entry point. Reads TRANSPORT env, starts the right transport.
+│   ├── server.ts             ← Creates McpServer instance, calls registerAllTools().
+│   ├── config.ts             ← Typed env config object. Single source of truth for all env vars.
+│   ├── auth/
+│   │   └── validator.ts      ← Auth guard functions. Throw McpError with helpful messages.
+│   ├── clients/
+│   │   ├── admin-panel.ts    ← Axios instance for Admin Panel API (Bearer token auth).
+│   │   ├── bitrise.ts        ← Axios instance for Bitrise API (token in Authorization header).
+│   │   └── jenkins.ts        ← Axios instance for Jenkins API (HTTP Basic Auth).
+│   ├── data/
+│   │   ├── s3Client.ts       ← Downloads CSV dump from AWS S3.
+│   │   ├── csvParser.ts      ← Parses raw CSV string into AppRecord[].
+│   │   └── appRegistry.ts   ← In-memory store. getAllApps(), getAppByBundleId().
+│   ├── tools/
+│   │   ├── registry.ts       ← Imports every tool and calls registerXxx(server). Add new tools here.
+│   │   ├── read/             ← Tools that only read data (require Admin Panel API key).
+│   │   │   ├── list-apps.ts
+│   │   │   ├── get-app-info.ts
+│   │   │   ├── get-ios-status.ts
+│   │   │   ├── get-android-status.ts
+│   │   │   ├── get-app-last-updated.ts
+│   │   │   ├── get-pending-apps.ts
+│   │   │   └── get-stale-apps.ts
+│   │   └── action/           ← Tools that trigger side effects (require Bitrise or Jenkins creds).
+│   │       ├── trigger-build.ts
+│   │       └── get-build-status.ts
+│   ├── transport/
+│   │   ├── stdio.ts          ← Connects McpServer to StdioServerTransport.
+│   │   └── http.ts           ← Express server with POST /mcp (Streamable HTTP) + GET /sse (legacy).
+│   └── types/
+│       └── index.ts          ← Shared interfaces: AppRecord, BuildStatus, CiProvider, etc.
+├── .env.example              ← Credential template. Copy to .env, never commit .env.
+├── package.json
+└── tsconfig.json
+```
+
+---
+
+## Core patterns — follow these everywhere
+
+### 1. Tool structure
+
+Every tool lives in its own file under `src/tools/read/` or `src/tools/action/`.
+Each file exports a single `registerXxx(server: McpServer): void` function.
+
+```typescript
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
+import { validateAdminPanelAuth } from "../../auth/validator.js";
+
+export function registerMyTool(server: McpServer): void {
+  server.tool(
+    "tool_name",                  // snake_case, matches MCP convention
+    "Agent-facing description.",  // clear, concise, tells the agent when to use it
+    {
+      param: z.string().describe("What this param does"),
+    },
+    async ({ param }) => {
+      validateAdminPanelAuth();   // ALWAYS validate auth first, before any logic
+
+      // ... tool logic ...
+
+      return {
+        content: [{ type: "text" as const, text: "result" }],
+      };
+    }
+  );
+}
+```
+
+After creating the file, import and call the register function in `src/tools/registry.ts`.
+
+### 2. Auth guards — call at the top of every handler
+
+| Service | Validator | When to use |
+|---|---|---|
+| Admin Panel API | `validateAdminPanelAuth()` | All read tools |
+| Bitrise | `validateBitriseAuth()` | Action tools when `provider === "bitrise"` |
+| Jenkins | `validateJenkinsAuth()` | Action tools when `provider === "jenkins"` |
+| AWS / S3 | `validateAwsAuth()` | Data layer — already called inside `s3Client.ts` |
+
+Validators throw `McpError` with a multi-line human-readable message if credentials are
+missing or incomplete. Do not wrap them in try/catch — let them propagate.
+
+### 3. API clients — use the singletons
+
+Never construct axios instances directly in tool files.
+Use the singleton getters from `src/clients/`:
+
+```typescript
+import { getAdminPanelClient } from "../../clients/admin-panel.js";
+const client = getAdminPanelClient();
+const { data } = await client.get("/apps");
+```
+
+The clients already have 401/403 interceptors that convert HTTP errors into McpErrors.
+
+### 4. Data layer — read tools use the registry
+
+Read tools should query `src/data/appRegistry.ts`, not the API client directly:
+
+```typescript
+import { getAllApps, getAppByBundleId } from "../../data/appRegistry.js";
+
+const apps = await getAllApps("enterprise");       // all enterprise apps
+const app  = await getAppByBundleId(bundle_id);   // throws McpError if not found
+```
+
+The registry loads the CSV from S3 on first call and caches it in memory.
+
+### 5. Error handling
+
+- Throw `McpError` (from `@modelcontextprotocol/sdk/types.js`) for user-facing errors.
+- Use `ErrorCode.InvalidRequest` for bad inputs / missing credentials.
+- Use `ErrorCode.InternalError` for unexpected server-side failures.
+- Regular `Error` throws are also caught by the SDK and returned as `InternalError`.
+- Never swallow errors silently.
+
+### 6. TypeScript conventions
+
+- `"type": "module"` — always use `.js` extensions in imports (even for `.ts` source files).
+- `strict: true` — no implicit any, no unchecked nulls.
+- `as const` — required on `type: "text"` in tool return values to satisfy SDK types.
+- All new types go in `src/types/index.ts`.
+
+---
+
+## Environment variables
+
+All env vars are read once in `src/config.ts` and exposed via the `config` object.
+Never call `process.env` directly outside of `config.ts`.
+
+```typescript
+import { config } from "../config.js";
+config.bitriseToken   // string | undefined
+config.adminPanelDomain  // string | undefined
+```
+
+`logConfigStatus()` prints a credential checklist to stderr at startup — useful for
+diagnosing missing keys without exposing values.
+
+---
+
+## Data model
+
+The core data type is `AppRecord` (`src/types/index.ts`). One record per CBA app.
+
+| Field | Type | Description |
+|---|---|---|
+| `bundle_id` | `string` | Primary key — reverse-DNS, e.g. `com.trainerize.peakfitness` |
+| `display_name` | `string` | Human-readable app name |
+| `app_type` | `"enterprise" \| "studio" \| "pro" \| "abc"` | Product line |
+| `team_name` | `string` | Gym / business name |
+| `group_id` | `string` | Gym group identifier |
+| `apple_id` | `string` | Apple account email (without @trainerize.com) |
+| `abc_app_type` | `string` | ABC sub-type, or `"N/A"` |
+| `ios_version` | `string` | Current App Store version |
+| `app_store_state` | `string` | e.g. `"Ready for Sale"`, `"In Review"` |
+| `apple_key_valid` | `string` | `.p8` key validity status |
+| `watch_face` | `string` | Watch face support flag |
+| `android_version` | `string` | Current Play Store version |
+| `android_store_state` | `string` | e.g. `"Published"`, `"Draft"` |
+| `google_key_valid` | `string` | Service account key validity |
+| `last_ios_updated` | `string` | ISO date of last iOS release |
+| `last_android_updated` | `string` | ISO date of last Android release |
+| `bitrise_workflow` | `string` | Bitrise workflow name for this app |
+| `dump_date` | `string` | ISO datetime when the CSV was generated |
+
+---
+
+## Implementation status
+
+| Phase | Status | Files |
+|---|---|---|
+| 1 — Scaffold | ✅ Complete | All files in place, builds and type-checks cleanly |
+| 2 — Data layer | ⏳ Stub | `src/data/` — structure ready, S3 download not wired |
+| 3 — Read tools | ⏳ Stub | `src/tools/read/` — auth + schema ready, handlers return placeholder |
+| 4 — Action tools | ⏳ Stub | `src/tools/action/` — auth + schema ready, API calls not implemented |
+| 5 — Polish | ⏳ Pending | Formatted output, demo script |
+
+When implementing a Phase 3 tool, the handler should:
+1. Call the auth validator (already in place).
+2. Call `getAllApps()` or `getAppByBundleId()` from `appRegistry.ts`.
+3. Format the result as a readable text block and return it.
+4. Remove the "implementation pending" placeholder text.
+
+When implementing a Phase 4 tool, the handler should:
+1. Call the auth validator for the chosen provider (already in place).
+2. Look up the app's `bitrise_workflow` from the registry.
+3. Call the provider client (`getBitriseClient()` or `getJenkinsClient()`).
+4. Return structured build info matching `BuildTriggerResult` or `BuildStatusResult`.
+
+---
+
+## Adding a new tool — checklist
+
+1. Create `src/tools/read/my-tool.ts` or `src/tools/action/my-tool.ts`.
+2. Export `registerMyTool(server: McpServer): void`.
+3. Define the Zod input schema inline in `server.tool(...)`.
+4. Call the correct auth validator at the top of the handler.
+5. Import and call `registerMyTool(server)` in `src/tools/registry.ts`.
+6. Run `npm run typecheck` — must pass with zero errors.
+
+---
+
+## Scripts
+
+```bash
+npm run dev          # stdio mode, hot reload (tsx watch)
+npm run dev:http     # HTTP mode, hot reload
+npm run build        # production build → dist/index.js
+npm run typecheck    # tsc --noEmit, zero tolerance for errors
+npm start            # run built dist (stdio)
+npm run start:http   # run built dist (HTTP)
+```
+
+---
+
+## Agent connection configs
+
+**Cursor / Claude Desktop** — add to `~/.cursor/mcp.json` or `claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "cba-mcp": {
+      "command": "node",
+      "args": ["/absolute/path/to/cbfa-mcp/dist/index.js"],
+      "env": { "ADMIN_PANEL_API_KEY": "...", "BITRISE_TOKEN": "..." }
+    }
+  }
+}
+```
+
+**HTTP agents** — start with `TRANSPORT=http npm start` then point your agent at:
+- `POST http://localhost:3000/mcp` — Streamable HTTP (current MCP standard)
+- `GET http://localhost:3000/sse` — SSE (legacy, for LangChain / n8n)
+
+---
+
+*Last updated: May 2026 — Trainerize CBA Hackathon*
