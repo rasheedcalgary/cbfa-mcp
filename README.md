@@ -68,7 +68,9 @@ npm run build
 
 **Cursor / Claude Desktop (stdio)**
 
-Add to `~/.cursor/mcp.json` (or `claude_desktop_config.json`):
+Add to `~/.cursor/mcp.json` (or `claude_desktop_config.json`).
+
+`ADMIN_PANEL_API_KEY` is the only value each user sets themselves. Everything else is filled in once by the server operator.
 
 ```json
 {
@@ -77,13 +79,13 @@ Add to `~/.cursor/mcp.json` (or `claude_desktop_config.json`):
       "command": "node",
       "args": ["/absolute/path/to/cbfa-mcp/dist/index.js"],
       "env": {
-        "ADMIN_PANEL_API_KEY": "← each user sets their own key here",
+        "ADMIN_PANEL_API_KEY": "your-api-key",
         "ADMIN_PANEL_DOMAIN": "https://your-admin-panel.trainerize.com",
-        "BITRISE_TOKEN": "← operator pre-loads this",
-        "AWS_ACCESS_KEY_ID": "← operator pre-loads this",
-        "AWS_SECRET_ACCESS_KEY": "← operator pre-loads this",
+        "BITRISE_TOKEN": "your-bitrise-token",
+        "AWS_ACCESS_KEY_ID": "your-aws-key-id",
+        "AWS_SECRET_ACCESS_KEY": "your-aws-secret",
         "AWS_REGION": "us-east-1",
-        "S3_BUCKET": "your-bucket",
+        "S3_BUCKET": "your-bucket-name",
         "S3_KEY": "path/to/cba_apps_dump.csv"
       }
     }
