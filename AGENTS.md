@@ -218,21 +218,16 @@ The core data type is `AppRecord` (`src/types/index.ts`). One record per CBA app
 
 | Phase | Status | Files |
 |---|---|---|
-| 1 — Scaffold | ✅ Complete | All files in place, builds and type-checks cleanly |
-| 2 — Data layer | ⏳ Stub | `src/data/` — structure ready, S3 download not wired |
-| 3 — Read tools | ⏳ Stub | `src/tools/read/` — auth + schema ready, handlers return placeholder |
-| 4 — Action tools | ⏳ Stub | `src/tools/action/` — auth + schema ready, API calls not implemented |
-| 5 — Polish | ⏳ Pending | Formatted output, demo script |
-
-When implementing a Phase 3 tool, the handler should:
-1. Call the auth validator (already in place).
-2. Call `getAllApps()` or `getAppByBundleId()` from `appRegistry.ts`.
-3. Format the result as a readable text block and return it.
-4. Remove the "implementation pending" placeholder text.
+| 1 — Scaffold | ✅ Complete | Project structure, transports, auth, tool stubs, structured logging, CLI banner |
+| 2 — Data layer | ✅ Complete | `src/data/` — S3 download, CSV parse (`relax_column_count`), in-memory registry with query helpers |
+| 3 — Read tools | ✅ Complete | All 7 tools in `src/tools/read/` return real data; `get_app_info` merges CSV + live API |
+| 3.1 — Admin API | ✅ Complete | `src/clients/admin-panel.ts` — `getNativeApp`, `GetNativeAppGroupSettings`, `getAppBuildQueue`; new `get_build_queue` tool |
+| 4 — Action tools | ⏳ Pending | `src/tools/action/` — auth guards in place, API calls not yet implemented |
+| 5 — Polish | ⏳ Pending | Demo script, display-name enrichment in `get_build_queue` cross-reference |
 
 When implementing a Phase 4 tool, the handler should:
 1. Call the auth validator for the chosen provider (already in place).
-2. Look up the app's `bitrise_workflow` from the registry.
+2. Look up the app's `bitrise_workflow` from the registry via `getAppByBundleId()`.
 3. Call the provider client (`getBitriseClient()` or `getJenkinsClient()`).
 4. Return structured build info matching `BuildTriggerResult` or `BuildStatusResult`.
 

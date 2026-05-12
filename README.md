@@ -194,10 +194,11 @@ API clients also intercept 401/403 responses and surface them as clear MCP error
 | Phase | Status | What |
 |---|---|---|
 | 1 — Scaffold | ✅ Done | Project structure, transports, auth, tool stubs |
-| 2 — Data layer | ⏳ Next | S3 CSV downloader, parser, in-memory registry |
-| 3 — Read tools | ⏳ Pending | Implement all 7 read tool handlers |
+| 2 — Data layer | ✅ Done | S3 CSV downloader, parser, in-memory app registry |
+| 3 — Read tools | ✅ Done | All 7 read tools live with real data + Admin API integration |
+| 3.1 — Admin API | ✅ Done | `getNativeApp`, `GetNativeAppGroupSettings`, `getAppBuildQueue` integrated; new `get_build_queue` tool |
 | 4 — Action tools | ⏳ Pending | Implement Bitrise + Jenkins build trigger/status |
-| 5 — Polish | ⏳ Pending | Error handling, formatted output, demo script |
+| 5 — Polish | ⏳ Pending | Demo script, `get_app_info` display-name enrichment from CSV |
 | 6 — Cert validity | 🔮 Post-MVP | Apple push cert + provisioning profile check |
 | 7 — Deploy | 🔮 Post-MVP | EC2 / Cloud Run with HTTP transport |
 | 8 — Auth | 🔮 Post-MVP | Google OAuth restricted to @trainerize.com |
