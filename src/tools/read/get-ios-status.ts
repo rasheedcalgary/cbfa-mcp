@@ -1,11 +1,10 @@
 /**
  * Tool: get_ios_status
  *
- * Returns the current iOS App Store status for a CBA app — current version,
- * App Store state (Ready for Sale / In Review / Rejected / etc.), and
- * whether the Apple distribution key (.p8) is valid.
+ * Returns the iOS App Store status for a CBA app — current version,
+ * App Store state, and Apple key validity.
  *
- * Auth required: Admin Panel API key (ADMIN_PANEL_API_KEY + ADMIN_PANEL_DOMAIN)
+ * Auth required: ADMIN_PANEL_API_KEY
  *
  * Example prompts:
  *   - "What's the iOS App Store status of com.trainerize.peakfitness?"
@@ -15,6 +14,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { validateAdminPanelAuth } from "../../auth/validator.js";
+import { getAppByBundleId } from "../../data/appRegistry.js";
 
 export function registerGetIosStatus(server: McpServer): void {
   server.tool(
@@ -28,21 +28,27 @@ export function registerGetIosStatus(server: McpServer): void {
     async ({ bundle_id }) => {
       validateAdminPanelAuth();
 
-      // TODO (Phase 3): Return ios_version, app_store_state, apple_key_valid from registry
+      const app = await getAppByBundleId(bundle_id);
+
+      // Derive a simple live/not-live flag from the App Store state
+      const state = app.app_store_state.toLowerCase();
+      const isLive = state.includes("ready for sale") || state.includes("published");
+
+      const lines = [
+        `iOS Status — ${app.display_name} (${app.bundle_id})`,
+        "─".repeat(60),
+        "",
+        `  Version:          ${app.ios_version || "—"}`,
+        `  App Store State:  ${app.app_store_state || "—"}  ${isLive ? "✓ Live" : "✗ Not live"}`,
+        `  Apple Key Valid:  ${app.apple_key_valid || "—"}`,
+        `  Apple Account:    ${app.apple_id || "—"}`,
+        `  Last Updated:     ${app.last_ios_updated || "—"}`,
+        "",
+        `Data dump: ${app.dump_date}`,
+      ];
+
       return {
-        content: [
-          {
-            type: "text" as const,
-            text: [
-              "✓ Auth check passed (ADMIN_PANEL_API_KEY is configured).",
-              "",
-              `get_ios_status — implementation pending (Phase 3).`,
-              `  bundle_id: ${bundle_id}`,
-              "",
-              "Will return: ios_version, app_store_state, apple_key_valid, apple_id",
-            ].join("\n"),
-          },
-        ],
+        content: [{ type: "text" as const, text: lines.join("\n") }],
       };
     }
   );

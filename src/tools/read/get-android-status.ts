@@ -1,10 +1,10 @@
 /**
  * Tool: get_android_status
  *
- * Returns the current Google Play Store status for a CBA app — current version,
- * Play Store state, and whether the Google Play Service Account key is valid.
+ * Returns the Google Play Store status for a CBA app — current version,
+ * Play Store state, and Google Play key validity.
  *
- * Auth required: Admin Panel API key (ADMIN_PANEL_API_KEY + ADMIN_PANEL_DOMAIN)
+ * Auth required: ADMIN_PANEL_API_KEY
  *
  * Example prompts:
  *   - "Is com.trainerize.peakfitness live on Android?"
@@ -14,6 +14,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { validateAdminPanelAuth } from "../../auth/validator.js";
+import { getAppByBundleId } from "../../data/appRegistry.js";
 
 export function registerGetAndroidStatus(server: McpServer): void {
   server.tool(
@@ -27,21 +28,25 @@ export function registerGetAndroidStatus(server: McpServer): void {
     async ({ bundle_id }) => {
       validateAdminPanelAuth();
 
-      // TODO (Phase 3): Return android_version, android_store_state, google_key_valid from registry
+      const app = await getAppByBundleId(bundle_id);
+
+      const state = app.android_store_state.toLowerCase();
+      const isLive = state.includes("published") || state.includes("production");
+
+      const lines = [
+        `Android Status — ${app.display_name} (${app.bundle_id})`,
+        "─".repeat(60),
+        "",
+        `  Version:           ${app.android_version || "—"}`,
+        `  Play Store State:  ${app.android_store_state || "—"}  ${isLive ? "✓ Live" : "✗ Not live"}`,
+        `  Google Key Valid:  ${app.google_key_valid || "—"}`,
+        `  Last Updated:      ${app.last_android_updated || "—"}`,
+        "",
+        `Data dump: ${app.dump_date}`,
+      ];
+
       return {
-        content: [
-          {
-            type: "text" as const,
-            text: [
-              "✓ Auth check passed (ADMIN_PANEL_API_KEY is configured).",
-              "",
-              `get_android_status — implementation pending (Phase 3).`,
-              `  bundle_id: ${bundle_id}`,
-              "",
-              "Will return: android_version, android_store_state, google_key_valid",
-            ].join("\n"),
-          },
-        ],
+        content: [{ type: "text" as const, text: lines.join("\n") }],
       };
     }
   );

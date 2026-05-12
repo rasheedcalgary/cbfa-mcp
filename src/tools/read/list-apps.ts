@@ -2,9 +2,9 @@
  * Tool: list_apps
  *
  * Lists all Custom Branded Apps, optionally filtered by product type.
- * Returns app code, display name, group ID, and team for each match.
+ * Returns a formatted table with bundle ID, display name, group ID, team, and type.
  *
- * Auth required: Admin Panel API key (ADMIN_PANEL_API_KEY + ADMIN_PANEL_DOMAIN)
+ * Auth required: ADMIN_PANEL_API_KEY
  *
  * Example prompts:
  *   - "List all CBA apps"
@@ -15,6 +15,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { validateAdminPanelAuth } from "../../auth/validator.js";
+import { getAllApps, getRegistryMeta } from "../../data/appRegistry.js";
+import type { AppType } from "../../types/index.js";
 
 export function registerListApps(server: McpServer): void {
   server.tool(
@@ -27,24 +29,53 @@ export function registerListApps(server: McpServer): void {
         .describe("Filter by app product type. Omit to return all apps."),
     },
     async ({ app_type }) => {
-      // Auth guard — throws a descriptive McpError if credentials are missing
       validateAdminPanelAuth();
 
-      // TODO (Phase 3): Query admin panel / app registry for apps, apply filter
+      const apps = await getAllApps(app_type as AppType | undefined);
+      const meta = getRegistryMeta();
+
+      if (apps.length === 0) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `No apps found${app_type ? ` for type "${app_type}"` : ""}.`,
+            },
+          ],
+        };
+      }
+
+      // Build a fixed-width table
+      const header = [
+        "Bundle ID".padEnd(50),
+        "Display Name".padEnd(35),
+        "Group ID".padEnd(12),
+        "Team Name".padEnd(30),
+        "Type",
+      ].join(" | ");
+
+      const divider = "-".repeat(header.length);
+
+      const rows = apps.map((a) =>
+        [
+          a.bundle_id.padEnd(50),
+          a.display_name.padEnd(35),
+          a.group_id.padEnd(12),
+          a.team_name.padEnd(30),
+          a.app_type,
+        ].join(" | ")
+      );
+
+      const lines = [
+        `Found ${apps.length} app${apps.length !== 1 ? "s" : ""}${app_type ? ` (type: ${app_type})` : ""} — data as of ${meta.loadedAt ?? "unknown"}`,
+        "",
+        header,
+        divider,
+        ...rows,
+      ];
+
       return {
-        content: [
-          {
-            type: "text" as const,
-            text: [
-              "✓ Auth check passed (ADMIN_PANEL_API_KEY is configured).",
-              "",
-              `list_apps — implementation pending (Phase 3).`,
-              `  Requested filter: app_type = ${app_type ?? "all"}`,
-              "",
-              "Will return: bundle_id | display_name | group_id | team_name | app_type",
-            ].join("\n"),
-          },
-        ],
+        content: [{ type: "text" as const, text: lines.join("\n") }],
       };
     }
   );
