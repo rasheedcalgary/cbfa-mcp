@@ -26,6 +26,7 @@ export function parseCsv(csvContent: string): AppRecord[] {
       skip_empty_lines: true,
       trim: true,
       cast: false,            // keep everything as strings; callers cast as needed
+      relax_column_count: true, // tolerate rows with extra/missing columns (data quality)
     }) as Record<string, string>[];
 
     return records.map(mapRowToAppRecord);
