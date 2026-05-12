@@ -11,8 +11,8 @@ Built for the Trainerize CBA Hackathon, May 2026. · 🌐 **[Live docs →](http
 10 tools that let an AI agent query 30,000+ custom-branded apps — no SQL, no dashboards, just plain English.
 
 - ✅ Query every app's status, store state, and key validity
-- ✅ Filter by iOS/Android version, CBA status, App Store state, app type, and business type
-- ✅ Find apps stuck in publishing queues or overdue for a release
+- ✅ Filter by iOS/Android version, CBA status, App Store state, iOS membership, app type, and business type
+- ✅ Find apps stuck in publishing queues or overdue for a release — including `AgreementIsMissing` membership issues
 - ✅ Check Apple push cert and provisioning profile expiry — single app or bulk scan
 - ✅ Flexible AND-filter reports across any combination of fields
 - ⏳ Trigger iOS/Android builds via Bitrise or Jenkins *(Phase 4)*
@@ -85,13 +85,13 @@ TRANSPORT=http npm start   # listens on :3000 (override with PORT=)
 |---|---|
 | `list_apps` | List all CBA apps, filter by type |
 | `get_app_info` | Full details — CSV registry + live Admin API (push cert, store links, theme) |
-| `get_ios_status` | iOS version, App Store state, Apple account |
+| `get_ios_status` | iOS version, App Store state, iOS membership status, and Apple account |
 | `get_android_status` | Android version, Play Store state, Play account |
 | `get_app_last_updated` | Last iOS/Android publish dates with freshness rating |
-| `get_pending_apps` | Apps stuck in publish queues (Apple submission, agreement, artwork, missing Play key) |
+| `get_pending_apps` | Apps stuck in publish queues — Apple submission, agreement, missing iOS membership (`AgreementIsMissing`), or missing Play key |
 | `get_stale_apps` | Apps not updated within a configurable threshold (default 180 days) |
 | `get_build_queue` | Live build queue state — ReadyToBuild / Building / Built / Failed |
-| `query_apps` | Flexible AND-filter report: version + status + store state + type + business |
+| `query_apps` | Flexible AND-filter report: version + status + store state + iOS membership + type + business |
 | `check_cert_validity` | Apple push cert + provisioning profile validity — single app or bulk scan with expiry threshold |
 
 ### ⏳ Action tools — require `BITRISE_TOKEN` or Jenkins credentials *(Phase 4 — in progress)*
@@ -158,6 +158,14 @@ Are there any expired push certs across ABC studio apps?
 Show all apps with certs expiring within 60 days
 ```
 
+**iOS membership (`query_apps` / `get_pending_apps`)**
+```
+Which apps have AgreementIsMissing in iOS membership?
+Show me ABC studio apps with AgreementIsMissing
+What apps are in the MissingIOSMembership pending queue?
+Which enterprise apps have an iOS membership issue?
+```
+
 ---
 
 ## Status reference
@@ -181,6 +189,15 @@ Show all apps with certs expiring within 60 days
 | `None` | Not submitted or removed |
 | `DeveloperRemovedFromSale` | Pulled by developer |
 | `PendingDeveloperRelease` | Approved, awaiting manual release |
+
+### iOS Membership (`ios_membership`)
+
+| Value | Meaning |
+|---|---|
+| `Active` | Apple Developer Program membership is valid |
+| `AgreementIsMissing` | Required Apple agreement not signed — blocks all new builds and submissions |
+| `Expired` | Apple Developer Program subscription has lapsed |
+| *(empty)* | Membership status not tracked for this app |
 
 ---
 
@@ -217,6 +234,7 @@ Set it in your mcp.json env block:
 | 3 — Read tools | ✅ Done | All 9 read tools live with real data + Admin API integration |
 | 3.1 — Reports | ✅ Done | `query_apps` flexible filter tool + log redaction security |
 | 3.2 — Cert validity | ✅ Done | `check_cert_validity` — push cert + provisioning profile check via existing Admin API |
+| 3.3 — iOS Membership | ✅ Done | `IOSMembership` field mapped; `AgreementIsMissing` filter in `query_apps`, `get_ios_status`, `get_pending_apps` |
 | 4 — Action tools | ⏳ Pending | Bitrise + Jenkins build trigger/status |
 | 5 — Deploy | 🔮 Post-MVP | EC2 / Cloud Run with HTTP transport |
 
