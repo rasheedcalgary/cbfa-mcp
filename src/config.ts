@@ -15,8 +15,6 @@
  * via the mcp.json env block and is merged in by the agent runtime — no conflict.
  */
 
-import "dotenv/config";
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface Config {

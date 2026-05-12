@@ -72,6 +72,7 @@ Share this snippet with each user. `ADMIN_PANEL_API_KEY` is the **only** value t
     "cba-mcp": {
       "command": "node",
       "args": ["/absolute/path/to/cbfa-mcp/dist/index.js"],
+      "cwd": "/absolute/path/to/cbfa-mcp",
       "env": {
         "ADMIN_PANEL_API_KEY": "your-api-key"
       }
@@ -80,7 +81,7 @@ Share this snippet with each user. `ADMIN_PANEL_API_KEY` is the **only** value t
 }
 ```
 
-Restart Cursor. A green dot in **Settings → MCP** confirms the server is live.
+`cwd` must point to the project root so the server can locate its `.env` file. All AWS/S3, Bitrise, and Jenkins credentials are loaded from that file automatically — users never set them.
 
 **Remote agents (HTTP)**
 
