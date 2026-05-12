@@ -59,7 +59,13 @@ function getClient(): AxiosInstance {
             ].join("\n")
           );
         }
-        return Promise.reject(error);
+        // For all other errors (timeout, 5xx, network), strip the request
+        // config from the error so the request body (which contains apiKey)
+        // can never leak into an error message shown to the user.
+        const safeMessage = error.response
+          ? `Admin Panel API error: HTTP ${error.response.status}`
+          : `Admin Panel API unreachable: ${error.message}`;
+        return Promise.reject(new Error(safeMessage));
       }
     );
   }
