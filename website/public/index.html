@@ -1419,7 +1419,7 @@
 <section id="tools" class="tools-section">
   <div class="container">
     <span class="section-eyebrow fade-up">Capabilities</span>
-    <h2 class="section-title fade-up">13 tools, zero boilerplate</h2>
+    <h2 class="section-title fade-up">14 tools, zero boilerplate</h2>
     <p class="section-sub fade-up">Every tool validates auth, redacts sensitive values from logs, and returns actionable error messages when credentials are missing.</p>
 
     <div class="tools-grid fade-up">
@@ -1552,6 +1552,16 @@
         <p class="tool-desc">Fetch and analyse a Bitrise (iOS) or Jenkins (Android) build log. Auto-detects CI provider from URL. Extracts 25+ error patterns — code-sign, Xcode, Gradle, lint — with line numbers and context.</p>
         <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
       </div>
+
+      <div class="tool-card" data-tool="analyze_circleci_build">
+        <div class="tool-card-top">
+          <div class="tool-icon icon-action">🟣</div>
+          <div><div class="tool-name">analyze_circleci_build</div></div>
+          <span class="tool-badge badge-action">ACTION</span>
+        </div>
+        <p class="tool-desc">Debug a failed CircleCI build for <strong>Glofox custom branded apps</strong>. Accepts any <code>glofoxinc/standalone-app-builder</code> URL. Walks pipeline → workflow → job, fetches step-level logs, applies 30+ error patterns, and returns a plain-English root-cause summary.</p>
+        <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
+      </div>
     </div>
   </div>
 </section>
@@ -1658,7 +1668,7 @@
           </div>
           <div class="arch-mcp-item">
             <div class="arch-mcp-item-name">🗂️ 13 MCP Tools</div>
-            <div class="arch-mcp-item-desc">10 read tools + 3 action tools (trigger, status, log analysis) — registered at startup, served over stdio or HTTP.</div>
+            <div class="arch-mcp-item-desc">10 read tools + 4 action tools (trigger, status, log analysis, CircleCI debugger) — registered at startup, served over stdio or HTTP.</div>
           </div>
         </div>
       </div>
@@ -1866,7 +1876,7 @@
       <ul>
         <li><a href="#why">Why CBA-MCP?</a></li>
         <li><a href="#tools">Read Tools (10)</a></li>
-        <li><a href="#tools">Action Tools (3)</a></li>
+        <li><a href="#tools">Action Tools (4)</a></li>
         <li><a href="#architecture">Architecture</a></li>
         <li><a href="#integration">stdio Transport</a></li>
         <li><a href="#integration">HTTP Transport</a></li>
@@ -2371,6 +2381,21 @@ REP Society — com.trainerize.repsociety1
       ],
       note: 'For <strong>archived Bitrise builds</strong> logs are fetched directly from the S3 pre-signed URL. For <strong>live builds</strong> log chunks are streamed. Jenkins logs come from <code>/consoleText</code>.'
     },
+    analyze_circleci_build: {
+      icon: '🟣', type: 'ACTION · requires CIRCLE_CI_TOKEN (server .env)',
+      desc: 'Debugs a failed CircleCI build for Glofox custom branded apps (glofoxinc/standalone-app-builder pipeline). Accepts any CircleCI URL — pipeline, workflow, job, or legacy format. Walks the API tree (pipeline → workflows → jobs), fetches full step-level logs via the v1.1 API, applies 30+ error-pattern rules (Node/npm, React Native, Android/Gradle, iOS/Xcode, Docker, Jest, network, Fastlane), and returns a structured markdown report with line numbers, context, and a plain-English root-cause summary.',
+      params: [
+        { name: 'build_url', req: true, desc: 'Any CircleCI URL for glofoxinc/standalone-app-builder. Pipeline: .../pipelines/github/glofoxinc/standalone-app-builder/{n}. Workflow: add /workflows/{uuid}. Job: add /jobs/{n}. Legacy: https://circleci.com/gh/glofoxinc/standalone-app-builder/{n}.' },
+        { name: 'context_lines', req: false, desc: 'Lines of log context above/below each error match. Range: 0–10. Default: 3.' }
+      ],
+      queries: [
+        { icon: '🟣', text: 'Why did this Glofox build fail? https://app.circleci.com/pipelines/github/glofoxinc/standalone-app-builder/10021' },
+        { icon: '🟣', text: 'Debug the failed CircleCI workflow https://app.circleci.com/pipelines/github/glofoxinc/standalone-app-builder/10021/workflows/4a76d24d-...' },
+        { icon: '🟣', text: 'What went wrong in Glofox pipeline 10021?' },
+        { icon: '🟣', text: 'Check the Glofox CircleCI build errors for pipeline 9998' },
+      ],
+      note: 'Only targets the <strong>glofoxinc/standalone-app-builder</strong> project. The <code>CIRCLE_CI_TOKEN</code> must belong to a member of the <strong>glofoxinc</strong> organisation. Log output is capped at 120,000 characters to avoid response size limits.'
+    },
   };
 
   function openPanel(toolKey) {
@@ -2378,7 +2403,7 @@ REP Society — com.trainerize.repsociety1
     if (!tool) return;
 
     document.getElementById('panelIcon').textContent = tool.icon;
-    const actionTools = ['trigger_app_build', 'get_build_status', 'analyze_build_log'];
+    const actionTools = ['trigger_app_build', 'get_build_status', 'analyze_build_log', 'analyze_circleci_build'];
     document.getElementById('panelIcon').className = `panel-tool-icon ${actionTools.includes(toolKey) ? 'icon-action' : 'icon-read'}`;
     document.getElementById('panelName').textContent = toolKey;
     document.getElementById('panelType').textContent = tool.type;

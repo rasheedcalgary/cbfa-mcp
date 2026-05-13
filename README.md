@@ -17,7 +17,7 @@
 
 ## ✨ What it does
 
-> 13 tools that let any AI agent query, filter, inspect, build, and diagnose the full CBA app portfolio in seconds.
+> 14 tools that let any AI agent query, filter, inspect, build, and diagnose the full CBA app portfolio in seconds.
 
 | | Capability |
 |:---:|---|
@@ -28,6 +28,7 @@
 | 📊 | Flexible report queries — export to **CSV** or formatted table |
 | ⚡ | Trigger iOS builds on Bitrise (`New_App_Creation_Flow` / `DEPLOY_testflight_S3_2026`) |
 | 🔎 | Analyse Bitrise (iOS) and Jenkins (Android) build logs — auto-extracts errors with line numbers |
+| 🟣 | Debug Glofox CBA CircleCI failures — walks pipeline → workflow → job, extracts root cause |
 
 ---
 
@@ -54,6 +55,7 @@ cp .env.example .env
 | `BITRISE_TOKEN` | Bitrise API — build trigger, status, log analysis |
 | `BITRISE_APP_SLUG` | Bitrise app slug (`de36db0d3356751f`) |
 | `JENKINS_URL` + `JENKINS_USER` + `JENKINS_API_KEY` | Jenkins Android builds |
+| `CIRCLE_CI_TOKEN` | CircleCI — Glofox CBA build debugging (`glofoxinc/standalone-app-builder`) |
 | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` + `S3_BUCKET` + `S3_KEY` | CSV data layer |
 
 > 💡 `ADMIN_PANEL_API_KEY` is **not** in `.env` — each user supplies it in their own agent config (Step 4). This is the only value users need to provide.
@@ -131,6 +133,7 @@ TRANSPORT=http npm start
 | `trigger_app_build` | Trigger an iOS build on Bitrise. `build_type=new_app` → `New_App_Creation_Flow`. `build_type=update` → `DEPLOY_testflight_S3_2026` |
 | `get_build_status` | Poll Bitrise build state, duration, workflow, and branch. Suggests log analysis on failure |
 | `analyze_build_log` | **Fetch and analyse Bitrise (iOS) or Jenkins (Android) build log.** Auto-detects provider from URL. Extracts 25+ error patterns with line numbers and context |
+| `analyze_circleci_build` | **Debug a failed CircleCI build for Glofox CBA apps.** Accepts any `glofoxinc/standalone-app-builder` URL (pipeline / workflow / job). Walks the API tree, fetches step-level logs, applies 30+ error patterns, returns a root-cause summary |
 
 ---
 
@@ -257,6 +260,17 @@ What went wrong with this build? https://app.bitrise.io/app/de36db0d3356751f/bui
 
 </details>
 
+<details open>
+<summary><b>🟣 Glofox CircleCI build debugging</b></summary>
+
+```
+Why did this Glofox build fail? https://app.circleci.com/pipelines/github/glofoxinc/standalone-app-builder/10021
+Check this CircleCI workflow: https://app.circleci.com/pipelines/github/glofoxinc/standalone-app-builder/10021/workflows/4a76d24d-6b36-427f-a6a9-f1c8e703635e
+Debug the failed job in pipeline 10021
+```
+
+</details>
+
 ---
 
 ## 🗺️ Roadmap
@@ -270,6 +284,7 @@ What went wrong with this build? https://app.bitrise.io/app/de36db0d3356751f/bui
 | 3.2 — Cert validity | ✅ | `check_cert_validity` via existing Admin API |
 | 3.3 — iOS Membership | ✅ | `IOSMembership` mapped; `AgreementIsMissing` filter across tools |
 | 4 — Action tools | ✅ | Bitrise iOS build trigger, status polling, log analysis (Bitrise + Jenkins) |
+| 4.1 — CircleCI debugger | ✅ | `analyze_circleci_build` — Glofox CBA pipeline debugging via CircleCI API |
 | 5 — Deploy | 🔮 | EC2 / Cloud Run with HTTP transport |
 
 ---
@@ -309,11 +324,11 @@ cbfa-mcp/
 │   ├── banner.ts             # Decorative CLI startup banner
 │   ├── logger.ts             # Structured stderr logging + sensitive field redaction
 │   ├── auth/validator.ts     # Auth guards — throws descriptive McpError on missing creds
-│   ├── clients/              # Axios singletons: admin-panel, bitrise, jenkins
+│   ├── clients/              # Axios singletons: admin-panel, bitrise, jenkins, circleci
 │   ├── data/                 # S3 downloader, CSV parser, in-memory app registry
 │   ├── utils/csv.ts          # RFC 4180 CSV serialiser (toCSV helper)
 │   ├── tools/read/           # 10 read tools (list, query, status, certs, queues…)
-│   ├── tools/action/         # 3 action tools: trigger-build, get-build-status, analyze-build-log
+│   ├── tools/action/         # 4 action tools: trigger-build, get-build-status, analyze-build-log, analyze-circleci-build
 │   └── transport/            # stdio + HTTP (Streamable + SSE) transports
 └── .env.example              # Credential template
 ```

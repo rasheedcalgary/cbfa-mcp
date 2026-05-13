@@ -8,9 +8,9 @@ needed to work effectively on this repository. Read this before making any chang
 ## What this project is
 
 **CBA-MCP** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server
-for the Trainerize **Custom Branded Apps (CBA)** platform. It exposes 13 tools that let
-AI agents query app status, publishing queues, build pipelines, trigger CI/CD jobs, and
-analyse build logs — all via natural language.
+for the Trainerize **Custom Branded Apps (CBA)** platform. It exposes 14 tools that let
+AI agents query app status, publishing queues, build pipelines, trigger CI/CD jobs,
+analyse build logs, and debug Glofox CircleCI failures — all via natural language.
 
 **Live site & interactive demo:** <https://cba-mcp.web.app/>
 
@@ -33,7 +33,8 @@ cbfa-mcp/
 │   ├── clients/
 │   │   ├── admin-panel.ts    ← Axios instance for Admin Panel API (Bearer token auth).
 │   │   ├── bitrise.ts        ← Axios instance for Bitrise API (token in Authorization header).
-│   │   └── jenkins.ts        ← Axios instance for Jenkins API (HTTP Basic Auth).
+│   │   ├── jenkins.ts        ← Axios instance for Jenkins API (HTTP Basic Auth).
+│   │   └── circleci.ts       ← Two axios instances: v2 (metadata) + v1.1 (job step output). Circle-Token header.
 │   ├── data/
 │   │   ├── s3Client.ts       ← Downloads CSV dump from AWS S3.
 │   │   ├── csvParser.ts      ← Parses raw CSV string into AppRecord[].
@@ -52,9 +53,10 @@ cbfa-mcp/
 │   │   │   ├── get-stale-apps.ts     ← format: "table" | "csv"
 │   │   │   └── query-apps.ts         ← display_name search + format: "table" | "csv"
 │   │   └── action/           ← Tools that trigger side effects (require Bitrise or Jenkins creds).
-│   │       ├── trigger-build.ts       ← Bitrise iOS: New_App_Creation_Flow / DEPLOY_testflight_S3_2026
-│   │       ├── get-build-status.ts   ← Polls Bitrise build; suggests log analysis on failure
-│   │       └── analyze-build-log.ts  ← Fetches + analyses Bitrise/Jenkins logs; 25+ error patterns
+│   │       ├── trigger-build.ts           ← Bitrise iOS: New_App_Creation_Flow / DEPLOY_testflight_S3_2026
+│   │       ├── get-build-status.ts       ← Polls Bitrise build; suggests log analysis on failure
+│   │       ├── analyze-build-log.ts      ← Fetches + analyses Bitrise/Jenkins logs; 25+ error patterns
+│   │       └── analyze-circleci-build.ts ← Debugs Glofox CircleCI failures; walks pipeline→workflow→job; 30+ patterns
 │   ├── transport/
 │   │   ├── stdio.ts          ← Connects McpServer to StdioServerTransport.
 │   │   └── http.ts           ← Express server with POST /mcp (Streamable HTTP) + GET /sse (legacy).
@@ -112,6 +114,7 @@ Credential ownership model:
 | Admin Panel API key | `validateAdminPanelAuth()` | `InvalidRequest` | End user |
 | Bitrise | `validateBitriseAuth()` | `InternalError` | Server operator |
 | Jenkins | `validateJenkinsAuth()` | `InternalError` | Server operator |
+| CircleCI | `validateCircleCiAuth()` | `InternalError` | Server operator |
 | AWS / S3 | `validateAwsAuth()` | `InternalError` | Server operator |
 
 Validators throw `McpError` with a multi-line human-readable message if credentials are
@@ -187,6 +190,7 @@ TRANSPORT, PORT,
 ADMIN_PANEL_DOMAIN,
 BITRISE_TOKEN, BITRISE_APP_SLUG,
 JENKINS_URL, JENKINS_USER, JENKINS_API_KEY,
+CIRCLE_CI_TOKEN,
 AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, S3_BUCKET, S3_KEY
 ```
 
@@ -249,6 +253,7 @@ The core data type is `AppRecord` (`src/types/index.ts`). One record per CBA app
 | 3.2 — Name search | ✅ Complete | `getAppsByName()` in registry; `display_name` param on `query_apps` |
 | 3.3 — CSV export | ✅ Complete | `src/utils/csv.ts`; `format: "csv"` on `list_apps`, `query_apps`, `get_pending_apps`, `get_stale_apps` |
 | 4 — Action tools | ✅ Complete | `trigger_app_build` (Bitrise iOS), `get_build_status` (Bitrise poll), `analyze_build_log` (Bitrise + Jenkins) |
+| 4.1 — CircleCI debugger | ✅ Complete | `analyze_circleci_build` — Glofox CBA pipeline/workflow/job debugger via CircleCI API v2 + v1.1 |
 | 5 — Deploy | 🔮 Pending | EC2 / Cloud Run with HTTP transport |
 
 ---
@@ -318,6 +323,16 @@ npm run start:http   # run built dist (HTTP)
 - **Jenkins**: fetches `/consoleText` via HTTP Basic Auth.
 - Error extraction uses 25+ regex patterns: Xcode errors, code-sign failures, pod install issues, Gradle task failures, lint errors, and more.
 - Returns labelled findings with line numbers, severity (`error` / `warning`), and configurable context lines.
+
+### `analyze_circleci_build`
+- Targets **Glofox CBA** builds: `glofoxinc/standalone-app-builder` pipeline only.
+- Auth: `validateCircleCiAuth()` — requires `CIRCLE_CI_TOKEN` in server `.env`.
+- **URL parsing**: supports all four shapes — pipeline (`…/{n}`), workflow (`…/{n}/workflows/{uuid}`), job (`…/{n}/workflows/{uuid}/jobs/{n2}`), legacy (`circleci.com/gh/glofoxinc/standalone-app-builder/{n}`).
+- **API walk**: `GET /api/v2/project/{slug}/pipeline/{n}` → pipeline → workflows → jobs → finds all with `status: "failed"`.
+- **Log fetching**: uses v1.1 API (`GET /api/v1.1/project/{slug}/{job-number}/output/{step}/{index}`) for each step/action separately to avoid truncation.
+- **Error patterns**: 30+ rules across Node/npm, React Native, Android/Gradle, iOS/Xcode, Docker, Jest, network, Fastlane, shell.
+- Returns a structured markdown report: pipeline summary → workflow status → per-job error findings with context → root-cause summary at the bottom.
+- Clients: `getCircleCiV2Client()` and `getCircleCiV1Client()` from `src/clients/circleci.ts`.
 
 ---
 
