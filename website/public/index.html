@@ -199,6 +199,187 @@
     }
     .section-sub { color: var(--muted); max-width: 540px; font-size: 15px; line-height: 1.8; }
 
+    /* ── WHY / VALUE PROP ──────────────────────────────────────── */
+    .why-section { background: var(--bg2); }
+
+    /* comparison cards */
+    .compare-intro {
+      display: flex; align-items: center; gap: 24px;
+      margin-top: 56px; margin-bottom: 32px;
+      padding: 20px 28px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--r);
+    }
+    .compare-legend { display: flex; gap: 20px; margin-left: auto; flex-shrink: 0; }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; letter-spacing: .04em; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink:0; }
+    .legend-dot-before { background: var(--red); }
+    .legend-dot-after  { background: var(--green); }
+    .compare-intro-text { font-size: 14px; color: var(--muted); line-height: 1.6; }
+    .compare-intro-text strong { color: var(--text); }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 20px;
+    }
+    .compare-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 28px 28px 24px;
+      transition: border-color .2s, transform .2s, box-shadow .2s;
+    }
+    .compare-card:hover {
+      border-color: rgba(0,212,232,.35);
+      transform: translateY(-3px);
+      box-shadow: 0 14px 44px rgba(0,0,0,.32);
+    }
+    .cc-top { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; }
+    .cc-icon-wrap {
+      width: 46px; height: 46px; border-radius: 10px; flex-shrink: 0;
+      background: rgba(0,212,232,.08); border: 1px solid rgba(0,212,232,.15);
+      display: flex; align-items: center; justify-content: center; font-size: 22px;
+    }
+    .cc-title { font-size: 16px; font-weight: 700; letter-spacing: -.01em; line-height: 1.3; margin-bottom: 4px; }
+    .cc-tag {
+      font-size: 10px; font-weight: 700; letter-spacing: .07em;
+      padding: 2px 8px; border-radius: 100px; display: inline-block;
+    }
+    .cc-tag-pain { background: rgba(255,95,87,.1); color: var(--red); border: 1px solid rgba(255,95,87,.2); }
+    .cc-tag-gain { background: rgba(0,212,232,.1); color: var(--cyan); border: 1px solid rgba(0,212,232,.2); }
+    .cc-desc {
+      font-size: 14px; color: var(--muted); line-height: 1.7;
+      margin-bottom: 22px; border-left: 2px solid var(--border);
+      padding-left: 12px;
+    }
+    .cc-desc strong { color: var(--text); font-weight: 600; }
+
+    /* progress bars */
+    .cc-bars { display: flex; flex-direction: column; gap: 14px; }
+    .cc-bar-row {}
+    .cc-bar-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 6px;
+    }
+    .cc-bar-lbl {
+      font-size: 11px; font-weight: 700; letter-spacing: .07em;
+      text-transform: uppercase; display: flex; align-items: center; gap: 6px;
+    }
+    .cc-bar-lbl::before {
+      content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    }
+    .cc-bar-lbl-before { color: #ff8a7a; }
+    .cc-bar-lbl-before::before { background: var(--red); }
+    .cc-bar-lbl-after  { color: var(--green); }
+    .cc-bar-lbl-after::before  { background: var(--green); }
+    .cc-bar-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px; font-weight: 700;
+    }
+    .cc-bar-time-before { color: #ff8a7a; }
+    .cc-bar-time-after  { color: var(--green); }
+    .cc-bar-track {
+      height: 9px; border-radius: 100px;
+      background: rgba(255,255,255,.05);
+      overflow: hidden;
+    }
+    .cc-bar-fill {
+      height: 100%; border-radius: 100px;
+      width: 0;
+      transition: width 1.4s cubic-bezier(.22,.68,0,1.05);
+    }
+    .compare-card.bars-animated .cc-bar-fill { width: var(--bar-w); }
+    .cc-bar-fill-before {
+      background: linear-gradient(90deg, rgba(255,95,87,.9), rgba(255,138,122,.7));
+      box-shadow: 0 0 8px rgba(255,95,87,.4);
+    }
+    .cc-bar-fill-after {
+      background: linear-gradient(90deg, #3ddc84, #00d4e8);
+      box-shadow: 0 0 8px rgba(61,220,132,.4);
+    }
+    .cc-speedup {
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 8px; margin-top: 14px;
+      font-size: 12px; color: var(--muted);
+    }
+    .cc-speedup-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; font-weight: 800;
+      color: var(--green);
+      background: rgba(61,220,132,.1);
+      border: 1px solid rgba(61,220,132,.2);
+      padding: 3px 10px; border-radius: 100px;
+    }
+
+    /* metric strip */
+    .metrics-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px; margin-top: 24px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: var(--r); overflow: hidden;
+    }
+    .metric-cell {
+      background: var(--bg3); padding: 28px 24px;
+      text-align: center;
+      transition: background .2s;
+    }
+    .metric-cell:hover { background: var(--bg4); }
+    .metric-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 800;
+      color: var(--cyan); line-height: 1;
+      margin-bottom: 6px;
+    }
+    .metric-label { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* scenario cards */
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px; margin-top: 48px;
+    }
+    .scenario-card {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 28px;
+      transition: border-color .2s, transform .2s, box-shadow .2s;
+    }
+    .scenario-card:hover {
+      border-color: rgba(0,212,232,.35);
+      transform: translateY(-3px);
+      box-shadow: 0 14px 40px rgba(0,0,0,.3);
+    }
+    .scenario-icon { font-size: 26px; margin-bottom: 14px; }
+    .scenario-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .scenario-before {
+      font-size: 12.5px; color: var(--red);
+      background: rgba(255,95,87,.08); border: 1px solid rgba(255,95,87,.18);
+      border-radius: 6px; padding: 8px 12px; margin: 10px 0 6px;
+      line-height: 1.5;
+    }
+    .scenario-after {
+      font-size: 12.5px; color: var(--green);
+      background: rgba(61,220,132,.07); border: 1px solid rgba(61,220,132,.18);
+      border-radius: 6px; padding: 8px 12px;
+      line-height: 1.5;
+    }
+    .scenario-tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 10.5px; font-weight: 700; letter-spacing: .06em;
+      padding: 3px 9px; border-radius: 100px; margin-bottom: 8px;
+    }
+    .tag-problem { background: rgba(255,95,87,.1); color: var(--red); border: 1px solid rgba(255,95,87,.2); }
+    .tag-solution { background: rgba(0,212,232,.1); color: var(--cyan); border: 1px solid rgba(0,212,232,.2); }
+    .scenario-time {
+      margin-top: 14px; display: flex; align-items: center; gap: 10px;
+      font-size: 12px; font-family: 'JetBrains Mono', monospace;
+    }
+    .time-before { color: var(--red); text-decoration: line-through; opacity: .7; }
+    .time-after  { color: var(--green); font-weight: 700; }
+    .time-arrow  { color: var(--muted2); }
+
     /* ── LIVE DEMO (TYPING) ────────────────────────────────────── */
     .demo-section { background: var(--bg2); }
     .demo-section .section-sub { margin-bottom: 52px; }
@@ -489,6 +670,10 @@
       .int-grid { grid-template-columns: 1fr; }
       .footer-inner { grid-template-columns: 1fr; gap: 32px; }
       .footer-bottom { flex-direction: column; text-align: center; }
+      .compare-grid { grid-template-columns: 1fr; }
+      .compare-intro { flex-direction: column; gap: 12px; }
+      .compare-legend { margin-left: 0; }
+      .metrics-strip { grid-template-columns: 1fr 1fr; }
     }
 
     /* ── SIDE PANEL ────────────────────────────────────────────── */
@@ -860,6 +1045,7 @@
     <span class="nav-logo-text">CBA-MCP</span>
   </a>
   <ul class="nav-links">
+    <li><a href="#why">Why</a></li>
     <li><a href="#demo">Live Demo</a></li>
     <li><a href="#tools">Tools</a></li>
     <li><a href="#architecture">Architecture</a></li>
@@ -896,6 +1082,300 @@
       <div class="stat"><div class="stat-n">13</div><div class="stat-l">MCP tools</div></div>
       <div class="stat"><div class="stat-n">3</div><div class="stat-l">Agent transports</div></div>
       <div class="stat"><div class="stat-n">Zero</div><div class="stat-l">Manual lookups, exports<br/>or API spelunking</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════ WHY ══════════════════ -->
+<section id="why" class="why-section">
+  <div class="container">
+    <span class="section-eyebrow fade-up">Why CBA-MCP?</span>
+    <h2 class="section-title fade-up">Built for CBA specialists</h2>
+    <p class="section-sub fade-up">Managing 30,000+ custom branded apps across iOS and Android used to mean constant context-switching, manual lookups, and waiting on build pipelines. CBA-MCP eliminates all of that.</p>
+
+    <!-- ── Legend + intro ── -->
+    <div class="compare-intro fade-up">
+      <p class="compare-intro-text">Each card shows a <strong>real workflow</strong> before and after CBA-MCP. The progress bars represent <strong>relative time cost</strong> — red (old way) vs green (with CBA-MCP).</p>
+      <div class="compare-legend">
+        <div class="legend-item"><div class="legend-dot legend-dot-before"></div><span style="color:#ff8a7a">Without CBA-MCP</span></div>
+        <div class="legend-item"><div class="legend-dot legend-dot-after"></div><span style="color:var(--green)">With CBA-MCP</span></div>
+      </div>
+    </div>
+
+    <!-- ── Comparison cards ── -->
+    <div class="compare-grid fade-up">
+
+      <!-- 1 -->
+      <div class="compare-card">
+        <div class="cc-top">
+          <div class="cc-icon-wrap">🔍</div>
+          <div>
+            <div class="cc-title">App status lookup</div>
+            <span class="cc-tag cc-tag-pain">Routine task</span>
+          </div>
+        </div>
+        <p class="cc-desc">Open the Admin Panel, search by bundle ID, navigate across tabs, and manually copy details into a Slack message or spreadsheet — <strong>for every single app</strong>.</p>
+        <div class="cc-bars">
+          <div class="cc-bar-row">
+            <div class="cc-bar-header">
+              <span class="cc-bar-lbl cc-bar-lbl-before">Without</span>
+              <span class="cc-bar-time cc-bar-time-before">3–5 min / app</span>
+            </div>
+            <div class="cc-bar-track"><div class="cc-bar-fill cc-bar-fill-before" style="--bar-w:92%"></div></div>
+          </div>
+          <div class="cc-bar-row">
+            <div class="cc-bar-header">
+              <span class="cc-bar-lbl cc-bar-lbl-after">With CBA-MCP</span>
+              <span class="cc-bar-time cc-bar-time-after">&lt;5 sec</span>
+            </div>
+            <div class="cc-bar-track"><div class="cc-bar-fill cc-bar-fill-after" style="--bar-w:3%"></div></div>
+          </div>
+        </div>
+        <div class="cc-speedup"><span>Time reduction</span><span class="cc-speedup-badge">~40×&nbsp;faster</span></div>
+      </div>
+
+      <!-- 2 -->
+      <div class="compare-card">
+        <div class="cc-top">
+          <div class="cc-icon-wrap">🔄</div>
+          <div>
+            <div class="cc-title">Cross-system investigation</div>
+            <span class="cc-tag cc-tag-pain">Context switching</span>
+          </div>
+        </div>
+        <p class="cc-desc">Jump between Admin Panel, Bitrise, Jenkins, App Store Connect, Google Play Console, and S3 — <strong>6 different systems</strong> — just to answer one question about an app.</p>
+        <div class="cc-bars">
+          <div class="cc-bar-row">
+            <div class="cc-bar-header">
+              <span class="cc-bar-lbl cc-bar-lbl-before">Without</span>
+              <span class="cc-bar-time cc-bar-time-before">15–30 min</span>
+            </div>
+            <div class="cc-bar-track"><div class="cc-bar-fill cc-bar-fill-before" style="--bar-w:88%"></div></div>
+          </div>
+          <div class="cc-bar-row">
+            <div class="cc-bar-header">
+              <span class="cc-bar-lbl cc-bar-lbl-after">With CBA-MCP</span>
+              <span class="cc-bar-time cc-bar-time-after">&lt;10 sec</span>
+            </div>
+            <div class="cc-bar-track"><div class="cc-bar-fill cc-bar-fill-after" style="--bar-w:2%"></div></div>
+          </div>
+        </div>
+        <div class="cc-speedup"><span>0 context switches needed</span><span class="cc-speedup-badge">1&nbsp;agent</span></div>
+      </div>
+
+      <!-- 3 -->
+      <div class="compare-card">
+        <div class="cc-top">
+          <div class="cc-icon-wrap">🔬</div>
+          <div>
+            <div class="cc-title">Diagnosing a build failure</div>
+            <span class="cc-tag cc-tag-pain">High friction</span>
+          </div>
+        </div>
+        <p class="cc-desc">Wait for a Bitrise/Jenkins notification, download the log, grep through thousands of lines, and manually decode <strong>Xcode errors, code-sign failures, and Gradle stack traces</strong>.</p>
+        <div class="cc-bars">
+          <div class="cc-bar-row">
+            <div class="cc-bar-header">
+              <span class="cc-bar-lbl cc-bar-lbl-before">Without</span>
+              <span class="cc-bar-time cc-bar-time-before">20–40 min</span>
+            </div>
+            <div class="cc-bar-track"><div class="cc-bar-fill cc-bar-fill-before" style="--bar-w:95%"></div></div>
+          </div>
+          <div class="cc-bar-row">
+            <div class="cc-bar-header">
+              <span class="cc-bar-lbl cc-bar-lbl-after">With CBA-MCP</span>
+              <span class="cc-bar-time cc-bar-time-after">&lt;30 sec</span>
+            </div>
+            <div class="cc-bar-track"><div class="cc-bar-fill cc-bar-fill-after" style="--bar-w:2%"></div></div>
+          </div>
+        </div>
+        <div class="cc-speedup"><span>25+ error patterns detected</span><span class="cc-speedup-badge">~80×&nbsp;faster</span></div>
+      </div>
+
+      <!-- 4 -->
+      <div class="compare-card">
+        <div class="cc-top">
+          <div class="cc-icon-wrap">📋</div>
+          <div>
+            <div class="cc-title">Bulk app reporting</div>
+            <span class="cc-tag cc-tag-pain">Repetitive work</span>
+          </div>
+        </div>
+        <p class="cc-desc">Export CSV from Admin Panel, open in Excel, manually filter by staleness or cert expiry, format the result, and share in Slack — <strong>every time someone asks for a report</strong>.</p>
+        <div class="cc-bars">
+          <div class="cc-bar-row">
+            <div class="cc-bar-header">
+              <span class="cc-bar-lbl cc-bar-lbl-before">Without</span>
+              <span class="cc-bar-time cc-bar-time-before">1–2 hrs</span>
+            </div>
+            <div class="cc-bar-track"><div class="cc-bar-fill cc-bar-fill-before" style="--bar-w:100%"></div></div>
+          </div>
+          <div class="cc-bar-row">
+            <div class="cc-bar-header">
+              <span class="cc-bar-lbl cc-bar-lbl-after">With CBA-MCP</span>
+              <span class="cc-bar-time cc-bar-time-after">&lt;15 sec</span>
+            </div>
+            <div class="cc-bar-track"><div class="cc-bar-fill cc-bar-fill-after" style="--bar-w:1%"></div></div>
+          </div>
+        </div>
+        <div class="cc-speedup"><span>CSV ready to share</span><span class="cc-speedup-badge">~300×&nbsp;faster</span></div>
+      </div>
+
+      <!-- 5 -->
+      <div class="compare-card">
+        <div class="cc-top">
+          <div class="cc-icon-wrap">🔐</div>
+          <div>
+            <div class="cc-title">Push cert expiry check</div>
+            <span class="cc-tag cc-tag-pain">Compliance risk</span>
+          </div>
+        </div>
+        <p class="cc-desc">Manually open each app in App Store Connect, click through push certificates, check each expiry date, and track them in a spreadsheet — <strong>repeated for every app</strong>.</p>
+        <div class="cc-bars">
+          <div class="cc-bar-row">
+            <div class="cc-bar-header">
+              <span class="cc-bar-lbl cc-bar-lbl-before">Without</span>
+              <span class="cc-bar-time cc-bar-time-before">2–3 hrs / 50 apps</span>
+            </div>
+            <div class="cc-bar-track"><div class="cc-bar-fill cc-bar-fill-before" style="--bar-w:96%"></div></div>
+          </div>
+          <div class="cc-bar-row">
+            <div class="cc-bar-header">
+              <span class="cc-bar-lbl cc-bar-lbl-after">With CBA-MCP</span>
+              <span class="cc-bar-time cc-bar-time-after">&lt;60 sec</span>
+            </div>
+            <div class="cc-bar-track"><div class="cc-bar-fill cc-bar-fill-after" style="--bar-w:1%"></div></div>
+          </div>
+        </div>
+        <div class="cc-speedup"><span>Severity-sorted, 5 parallel calls</span><span class="cc-speedup-badge">~200×&nbsp;faster</span></div>
+      </div>
+
+      <!-- 6 -->
+      <div class="compare-card">
+        <div class="cc-top">
+          <div class="cc-icon-wrap">🤖</div>
+          <div>
+            <div class="cc-title">New specialist onboarding</div>
+            <span class="cc-tag cc-tag-pain">Tribal knowledge</span>
+          </div>
+        </div>
+        <p class="cc-desc">New team members spend <strong>weeks learning</strong> which apps are in which state, which workflows map to which teams, and how to navigate 6 different systems to answer routine questions.</p>
+        <div class="cc-bars">
+          <div class="cc-bar-row">
+            <div class="cc-bar-header">
+              <span class="cc-bar-lbl cc-bar-lbl-before">Without</span>
+              <span class="cc-bar-time cc-bar-time-before">Weeks to ramp up</span>
+            </div>
+            <div class="cc-bar-track"><div class="cc-bar-fill cc-bar-fill-before" style="--bar-w:90%"></div></div>
+          </div>
+          <div class="cc-bar-row">
+            <div class="cc-bar-header">
+              <span class="cc-bar-lbl cc-bar-lbl-after">With CBA-MCP</span>
+              <span class="cc-bar-time cc-bar-time-after">Productive day 1</span>
+            </div>
+            <div class="cc-bar-track"><div class="cc-bar-fill cc-bar-fill-after" style="--bar-w:6%"></div></div>
+          </div>
+        </div>
+        <div class="cc-speedup"><span>Natural language, no training needed</span><span class="cc-speedup-badge">Day&nbsp;1</span></div>
+      </div>
+
+    </div>
+
+    <!-- ── Metrics strip ── -->
+    <div class="metrics-strip fade-up">
+      <div class="metric-cell">
+        <div class="metric-val">40×</div>
+        <div class="metric-label">Faster app status lookups<br/>vs. Admin Panel UI</div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-val">&lt;30s</div>
+        <div class="metric-label">Build error root cause<br/>from any Bitrise/Jenkins URL</div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-val">0</div>
+        <div class="metric-label">Context switches needed<br/>to answer CBA questions</div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-val">13</div>
+        <div class="metric-label">Tools covering the entire<br/>CBA ops lifecycle</div>
+      </div>
+    </div>
+
+    <!-- ── Scenario cards ── -->
+    <div class="scenario-grid fade-up">
+
+      <div class="scenario-card">
+        <div class="scenario-icon">🔐</div>
+        <div class="scenario-title">Cert expiry fire drill</div>
+        <div class="scenario-before">❌ Before: manually open each app in App Store Connect, click through push certificates, check dates, track in a spreadsheet — 2–3 hours for 50 apps.</div>
+        <div class="scenario-after">✅ After: <em>"Which enterprise apps have push certs expiring in the next 30 days?"</em> — CBA-MCP bulk-scans 50 apps concurrently and returns a severity-sorted list in under a minute.</div>
+        <div class="scenario-time">
+          <span class="time-before">2–3 hrs</span>
+          <span class="time-arrow">→</span>
+          <span class="time-after">&lt;60 sec</span>
+        </div>
+      </div>
+
+      <div class="scenario-card">
+        <div class="scenario-icon">🔬</div>
+        <div class="scenario-title">Diagnosing a failed iOS build</div>
+        <div class="scenario-before">❌ Before: wait for Bitrise notification, open the build, scroll through thousands of log lines, decode Xcode errors and code-sign failures manually — 20–40 min.</div>
+        <div class="scenario-after">✅ After: <em>"Why did this build fail? https://app.bitrise.io/build/..."</em> — CBA-MCP fetches and analyses the log, highlights errors with line numbers and context in seconds.</div>
+        <div class="scenario-time">
+          <span class="time-before">20–40 min</span>
+          <span class="time-arrow">→</span>
+          <span class="time-after">&lt;30 sec</span>
+        </div>
+      </div>
+
+      <div class="scenario-card">
+        <div class="scenario-icon">⏳</div>
+        <div class="scenario-title">Clearing the publish queue</div>
+        <div class="scenario-before">❌ Before: check the Admin Panel publish list, cross-reference Apple Dev status per app, compile a list of blockers, assign follow-ups — 30–60 min per sweep.</div>
+        <div class="scenario-after">✅ After: <em>"Show me all apps with AgreementIsMissing"</em> or <em>"Export the pending Apple submission queue to CSV"</em> — actionable list in seconds, ready to share.</div>
+        <div class="scenario-time">
+          <span class="time-before">30–60 min</span>
+          <span class="time-arrow">→</span>
+          <span class="time-after">&lt;10 sec</span>
+        </div>
+      </div>
+
+      <div class="scenario-card">
+        <div class="scenario-icon">📊</div>
+        <div class="scenario-title">Generating a stale app report</div>
+        <div class="scenario-before">❌ Before: export CSV from Admin Panel, open in Excel, filter by last-updated date, format the report, share in Slack — 1–2 hours of repetitive work.</div>
+        <div class="scenario-after">✅ After: <em>"Export all enterprise apps not updated in 180 days as CSV"</em> — RFC-compliant CSV with bundle ID, display name, type, and last updated dates, instantly.</div>
+        <div class="scenario-time">
+          <span class="time-before">1–2 hrs</span>
+          <span class="time-arrow">→</span>
+          <span class="time-after">&lt;15 sec</span>
+        </div>
+      </div>
+
+      <div class="scenario-card">
+        <div class="scenario-icon">🚀</div>
+        <div class="scenario-title">Triggering iOS builds</div>
+        <div class="scenario-before">❌ Before: log into Bitrise, navigate to the correct app, select the workflow, set environment variables, trigger — repeating this for multiple apps means multiple manual sessions.</div>
+        <div class="scenario-after">✅ After: <em>"Trigger a new app build for com.trainerize.peakfitness"</em> — CBA-MCP auto-selects the right workflow, passes the correct env vars, and returns the build URL.</div>
+        <div class="scenario-time">
+          <span class="time-before">5–10 min/app</span>
+          <span class="time-arrow">→</span>
+          <span class="time-after">&lt;5 sec</span>
+        </div>
+      </div>
+
+      <div class="scenario-card">
+        <div class="scenario-icon">🔍</div>
+        <div class="scenario-title">On-boarding a new specialist</div>
+        <div class="scenario-before">❌ Before: new team member needs weeks of onboarding to know which apps exist, their status, workflows, and how to query different systems — tribal knowledge barrier.</div>
+        <div class="scenario-after">✅ After: any agent user with an <code style="font-size:11px;color:var(--cyan)">ADMIN_PANEL_API_KEY</code> can query the full CBA estate in natural language from day one. No training required for routine tasks.</div>
+        <div class="scenario-time">
+          <span class="time-before">Weeks to ramp</span>
+          <span class="time-arrow">→</span>
+          <span class="time-after">Productive day 1</span>
+        </div>
+      </div>
+
     </div>
   </div>
 </section>
@@ -1373,6 +1853,7 @@
     <div class="footer-col">
       <h4>Tools</h4>
       <ul>
+        <li><a href="#why">Why CBA-MCP?</a></li>
         <li><a href="#tools">Read Tools (10)</a></li>
         <li><a href="#tools">Action Tools (3)</a></li>
         <li><a href="#architecture">Architecture</a></li>
@@ -1417,6 +1898,17 @@
     });
   }, { threshold: 0.1 });
   document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
+
+  /* ── Animate progress bars when card scrolls into view ─── */
+  const barObs = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('bars-animated'), i * 120);
+        barObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.35 });
+  document.querySelectorAll('.compare-card').forEach(el => barObs.observe(el));
 
   /* ── Typing demo ───────────────────────────────── */
   const DEMOS = [
