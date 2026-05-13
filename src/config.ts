@@ -56,6 +56,10 @@ export interface Config {
   jenkinsUser: string | undefined;
   jenkinsApiKey: string | undefined;
 
+  // ── CircleCI — operator-supplied via server .env ─
+  /** CircleCI personal API token. Used for Glofox CBA build debugging. */
+  circleCiToken: string | undefined;
+
   // ── AWS / S3 — operator-supplied via server .env ─
   awsAccessKeyId: string | undefined;
   awsSecretAccessKey: string | undefined;
@@ -80,6 +84,8 @@ export const config: Config = {
   jenkinsUser: process.env.JENKINS_USER,
   jenkinsApiKey: process.env.JENKINS_API_KEY,
 
+  circleCiToken: process.env.CIRCLE_CI_TOKEN,
+
   awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID,
   awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   awsRegion: process.env.AWS_REGION ?? "us-east-1",
@@ -99,6 +105,7 @@ export function logConfigStatus(): void {
     { label: "BITRISE_TOKEN        (server .env)", ok: !!config.bitriseToken },
     { label: "BITRISE_APP_SLUG     (server .env)", ok: !!config.bitriseAppSlug },
     { label: "JENKINS credentials  (server .env)", ok: !!(config.jenkinsUrl && config.jenkinsUser && config.jenkinsApiKey) },
+    { label: "CIRCLE_CI_TOKEN      (server .env)", ok: !!config.circleCiToken },
     { label: "AWS credentials      (server .env)", ok: !!(config.awsAccessKeyId && config.awsSecretAccessKey) },
     { label: "S3 path              (server .env)", ok: !!(config.s3Bucket && config.s3Key) },
   ];

@@ -87,6 +87,27 @@ export function validateJenkinsAuth(): void {
   );
 }
 
+// ─── Action Tools (CircleCI) ──────────────────────────────────────────────────
+
+/**
+ * Validates CircleCI credentials.
+ * These are server-operator credentials, pre-loaded in the .env file.
+ * If missing it is a server configuration error, not a user error.
+ */
+export function validateCircleCiAuth(): void {
+  if (config.circleCiToken) return;
+
+  throw new McpError(
+    ErrorCode.InternalError,
+    [
+      "Server configuration error — CIRCLE_CI_TOKEN is not configured.",
+      "",
+      "This is a server-side credential that should be pre-loaded by the operator.",
+      "Contact the server administrator to set CIRCLE_CI_TOKEN in the server .env file.",
+    ].join("\n")
+  );
+}
+
 // ─── Data Layer (AWS / S3) ────────────────────────────────────────────────────
 
 /**
