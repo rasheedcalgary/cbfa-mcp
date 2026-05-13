@@ -8,9 +8,9 @@ needed to work effectively on this repository. Read this before making any chang
 ## What this project is
 
 **CBA-MCP** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server
-for the Trainerize **Custom Branded Apps (CBA)** platform. It exposes 9 tools that let
-AI agents query app status, publishing queues, build pipelines, and trigger CI/CD jobs
-— all via natural language.
+for the Trainerize **Custom Branded Apps (CBA)** platform. It exposes 13 tools that let
+AI agents query app status, publishing queues, build pipelines, trigger CI/CD jobs, and
+analyse build logs — all via natural language.
 
 Built in TypeScript using the official `@modelcontextprotocol/sdk`. Supports two transports:
 - **stdio** — for local agents (Cursor, Claude Desktop). Default.
@@ -35,20 +35,24 @@ cbfa-mcp/
 │   ├── data/
 │   │   ├── s3Client.ts       ← Downloads CSV dump from AWS S3.
 │   │   ├── csvParser.ts      ← Parses raw CSV string into AppRecord[].
-│   │   └── appRegistry.ts   ← In-memory store. getAllApps(), getAppByBundleId().
+│   │   └── appRegistry.ts   ← In-memory store. getAllApps(), getAppByBundleId(), getAppsByName().
+│   ├── utils/
+│   │   └── csv.ts            ← RFC 4180 CSV serialiser. toCSV(headers, rows) used by report tools.
 │   ├── tools/
 │   │   ├── registry.ts       ← Imports every tool and calls registerXxx(server). Add new tools here.
 │   │   ├── read/             ← Tools that only read data (require Admin Panel API key).
-│   │   │   ├── list-apps.ts
+│   │   │   ├── list-apps.ts          ← format: "table" | "csv"
 │   │   │   ├── get-app-info.ts
 │   │   │   ├── get-ios-status.ts
 │   │   │   ├── get-android-status.ts
 │   │   │   ├── get-app-last-updated.ts
-│   │   │   ├── get-pending-apps.ts
-│   │   │   └── get-stale-apps.ts
+│   │   │   ├── get-pending-apps.ts   ← format: "table" | "csv"
+│   │   │   ├── get-stale-apps.ts     ← format: "table" | "csv"
+│   │   │   └── query-apps.ts         ← display_name search + format: "table" | "csv"
 │   │   └── action/           ← Tools that trigger side effects (require Bitrise or Jenkins creds).
-│   │       ├── trigger-build.ts
-│   │       └── get-build-status.ts
+│   │       ├── trigger-build.ts       ← Bitrise iOS: New_App_Creation_Flow / DEPLOY_testflight_S3_2026
+│   │       ├── get-build-status.ts   ← Polls Bitrise build; suggests log analysis on failure
+│   │       └── analyze-build-log.ts  ← Fetches + analyses Bitrise/Jenkins logs; 25+ error patterns
 │   ├── transport/
 │   │   ├── stdio.ts          ← Connects McpServer to StdioServerTransport.
 │   │   └── http.ts           ← Express server with POST /mcp (Streamable HTTP) + GET /sse (legacy).
@@ -129,13 +133,30 @@ The clients already have 401/403 interceptors that convert HTTP errors into McpE
 Read tools should query `src/data/appRegistry.ts`, not the API client directly:
 
 ```typescript
-import { getAllApps, getAppByBundleId } from "../../data/appRegistry.js";
+import { getAllApps, getAppByBundleId, getAppsByName } from "../../data/appRegistry.js";
 
 const apps = await getAllApps("enterprise");       // all enterprise apps
 const app  = await getAppByBundleId(bundle_id);   // throws McpError if not found
+const hits = await getAppsByName("goodlife");      // partial, case-insensitive name match
 ```
 
 The registry loads the CSV from S3 on first call and caches it in memory.
+
+### 4a. CSV export — use the shared utility
+
+Report tools that support `format: "csv"` use `src/utils/csv.ts`:
+
+```typescript
+import { toCSV } from "../../utils/csv.js";
+
+const csvText = toCSV(
+  ["bundle_id", "display_name", "ios_version"],   // header row
+  apps.map((a) => [a.bundle_id, a.display_name, a.ios_version])
+);
+return { content: [{ type: "text" as const, text: "```csv\n" + csvText + "\n```" }] };
+```
+
+`toCSV` handles RFC 4180 quoting and escaping automatically.
 
 ### 5. Error handling
 
@@ -162,7 +183,7 @@ Two separate sources — never mix them:
 ```
 TRANSPORT, PORT,
 ADMIN_PANEL_DOMAIN,
-BITRISE_TOKEN,
+BITRISE_TOKEN, BITRISE_APP_SLUG,
 JENKINS_URL, JENKINS_USER, JENKINS_API_KEY,
 AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, S3_BUCKET, S3_KEY
 ```
@@ -180,6 +201,7 @@ import { config } from "../config.js";
 config.adminPanelApiKey   // string | undefined  ← from user's mcp.json
 config.adminPanelDomain   // string | undefined  ← from server .env
 config.bitriseToken       // string | undefined  ← from server .env
+config.bitriseAppSlug     // string | undefined  ← from server .env (e.g. de36db0d3356751f)
 ```
 
 `logConfigStatus()` prints a two-section checklist to stderr at startup — one section
@@ -220,16 +242,12 @@ The core data type is `AppRecord` (`src/types/index.ts`). One record per CBA app
 |---|---|---|
 | 1 — Scaffold | ✅ Complete | Project structure, transports, auth, tool stubs, structured logging, CLI banner |
 | 2 — Data layer | ✅ Complete | `src/data/` — S3 download, CSV parse (`relax_column_count`), in-memory registry with query helpers |
-| 3 — Read tools | ✅ Complete | All 7 tools in `src/tools/read/` return real data; `get_app_info` merges CSV + live API |
-| 3.1 — Admin API | ✅ Complete | `src/clients/admin-panel.ts` — `getNativeApp`, `GetNativeAppGroupSettings`, `getAppBuildQueue`; new `get_build_queue` tool |
-| 4 — Action tools | ⏳ Pending | `src/tools/action/` — auth guards in place, API calls not yet implemented |
-| 5 — Polish | ⏳ Pending | Demo script, display-name enrichment in `get_build_queue` cross-reference |
-
-When implementing a Phase 4 tool, the handler should:
-1. Call the auth validator for the chosen provider (already in place).
-2. Look up the app's `bitrise_workflow` from the registry via `getAppByBundleId()`.
-3. Call the provider client (`getBitriseClient()` or `getJenkinsClient()`).
-4. Return structured build info matching `BuildTriggerResult` or `BuildStatusResult`.
+| 3 — Read tools | ✅ Complete | All 10 tools in `src/tools/read/` return real data; `get_app_info` merges CSV + live API |
+| 3.1 — Admin API | ✅ Complete | `src/clients/admin-panel.ts` — `getNativeApp`, `GetNativeAppGroupSettings`, `getAppBuildQueue`; `get_build_queue` tool |
+| 3.2 — Name search | ✅ Complete | `getAppsByName()` in registry; `display_name` param on `query_apps` |
+| 3.3 — CSV export | ✅ Complete | `src/utils/csv.ts`; `format: "csv"` on `list_apps`, `query_apps`, `get_pending_apps`, `get_stale_apps` |
+| 4 — Action tools | ✅ Complete | `trigger_app_build` (Bitrise iOS), `get_build_status` (Bitrise poll), `analyze_build_log` (Bitrise + Jenkins) |
+| 5 — Deploy | 🔮 Pending | EC2 / Cloud Run with HTTP transport |
 
 ---
 
@@ -275,6 +293,29 @@ npm run start:http   # run built dist (HTTP)
 **HTTP agents** — start with `TRANSPORT=http npm start` then point your agent at:
 - `POST http://localhost:3000/mcp` — Streamable HTTP (current MCP standard)
 - `GET http://localhost:3000/sse` — SSE (legacy, for LangChain / n8n)
+
+---
+
+## Action tool implementation notes
+
+### `trigger_app_build`
+- Uses `BITRISE_APP_SLUG` + `BITRISE_TOKEN` from `config`.
+- `build_type=new_app` → workflow `New_App_Creation_Flow`.
+- `build_type=update` → workflow `DEPLOY_testflight_S3_2026`.
+- Passes `BUNDLE_ID`, `APP_NAME`, `BITRISE_WORKFLOW` as Bitrise env vars.
+- Returns build number, slug, and Bitrise URL.
+
+### `get_build_status`
+- Accepts a full Bitrise URL or raw build slug.
+- `parseBuildSlug` regex: `/\/build\/([a-f0-9-]+)/i` — handles UUID hyphens.
+- Returns status, duration, workflow, branch, and a hint to run `analyze_build_log` on failure.
+
+### `analyze_build_log`
+- Auto-detects provider from URL (`app.bitrise.io` → Bitrise; otherwise Jenkins).
+- **Bitrise**: fetches log metadata from `/apps/{slug}/builds/{buildSlug}/log`, downloads from `expiring_raw_log_url` (S3) for archived builds or streams chunks for live builds.
+- **Jenkins**: fetches `/consoleText` via HTTP Basic Auth.
+- Error extraction uses 25+ regex patterns: Xcode errors, code-sign failures, pod install issues, Gradle task failures, lint errors, and more.
+- Returns labelled findings with line numbers, severity (`error` / `warning`), and configurable context lines.
 
 ---
 

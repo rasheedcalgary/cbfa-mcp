@@ -13,16 +13,17 @@
 
 ## ✨ What it does
 
-> 11 tools that let any AI agent query, filter, and inspect the full CBA app portfolio in seconds.
+> 13 tools that let any AI agent query, filter, inspect, build, and diagnose the full CBA app portfolio in seconds.
 
 | | Capability |
 |:---:|---|
-| 🔍 | Query every app's status, store state, iOS/Android version, and key validity |
+| 🔍 | Query every app by bundle ID **or by name** — `"Show me all GoodLife apps"` just works |
 | 🎯 | AND-filter by version, CBA status, App Store state, iOS membership, type, and business |
 | ⏳ | Find apps stuck in publish queues — including `AgreementIsMissing` membership blocks |
 | 🔐 | Check Apple push cert and provisioning profile expiry — single app or bulk scan |
-| 📊 | Flexible report-style queries across any combination of fields |
-| 🏗️ | Trigger iOS/Android builds via Bitrise or Jenkins *(Phase 4)* |
+| 📊 | Flexible report queries — export to **CSV** or formatted table |
+| ⚡ | Trigger iOS builds on Bitrise (`New_App_Creation_Flow` / `DEPLOY_testflight_S3_2026`) |
+| 🔎 | Analyse Bitrise (iOS) and Jenkins (Android) build logs — auto-extracts errors with line numbers |
 
 ---
 
@@ -46,8 +47,9 @@ cp .env.example .env
 | Variable | Purpose |
 |---|---|
 | `ADMIN_PANEL_DOMAIN` | Admin Panel API base URL |
-| `BITRISE_TOKEN` | Bitrise build tools |
-| `JENKINS_URL` + `JENKINS_USER` + `JENKINS_API_KEY` | Jenkins *(optional)* |
+| `BITRISE_TOKEN` | Bitrise API — build trigger, status, log analysis |
+| `BITRISE_APP_SLUG` | Bitrise app slug (`de36db0d3356751f`) |
+| `JENKINS_URL` + `JENKINS_USER` + `JENKINS_API_KEY` | Jenkins Android builds |
 | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` + `S3_BUCKET` + `S3_KEY` | CSV data layer |
 
 > 💡 `ADMIN_PANEL_API_KEY` is **not** in `.env` — each user supplies it in their own agent config (Step 4). This is the only value users need to provide.
@@ -107,23 +109,24 @@ TRANSPORT=http npm start
 
 | Tool | What it does |
 |---|---|
-| `list_apps` | List all CBA apps, filter by type |
+| `list_apps` | List all CBA apps — filter by type, export as `csv` or `table` |
 | `get_app_info` | Full details — CSV data + live Admin API (push cert, store links, theme config) |
 | `get_ios_status` | iOS version, App Store state, iOS membership status, Apple account |
 | `get_android_status` | Android version, Play Store state, Play account |
 | `get_app_last_updated` | Last iOS/Android publish dates with freshness rating |
-| `get_pending_apps` | Apps in publish queues — Apple submission, agreement, missing iOS membership, missing Play key |
-| `get_stale_apps` | Apps not updated within a configurable threshold (default 180 days) |
+| `get_pending_apps` | Apps in publish queues — Apple submission, agreement, missing iOS membership, missing Play key. Export as `csv` |
+| `get_stale_apps` | Apps not updated within a configurable threshold (default 180 days). Export as `csv` |
 | `get_build_queue` | Live CI build queue — ReadyToBuild / Building / Built / Failed |
-| `query_apps` | Flexible AND-filter report: version + status + store state + iOS membership + type + business |
-| `check_cert_validity` | Apple push cert + provisioning profile check — single app or bulk scan with expiry threshold |
+| `query_apps` | Flexible AND-filter: version + status + store state + iOS membership + **name search** + type + business. Export as `csv` |
+| `check_cert_validity` | Apple push cert + provisioning profile — single app or bulk scan with expiry threshold |
 
-### ⚡ Action tools — require `BITRISE_TOKEN` or Jenkins credentials
+### ⚡ Action tools — require `BITRISE_TOKEN` / Jenkins credentials
 
 | Tool | What it does |
 |---|---|
-| `trigger_app_build` | Trigger an iOS or Android build on Bitrise or Jenkins |
-| `get_build_status` | Poll build state, duration, and log URL |
+| `trigger_app_build` | Trigger an iOS build on Bitrise. `build_type=new_app` → `New_App_Creation_Flow`. `build_type=update` → `DEPLOY_testflight_S3_2026` |
+| `get_build_status` | Poll Bitrise build state, duration, workflow, and branch. Suggests log analysis on failure |
+| `analyze_build_log` | **Fetch and analyse Bitrise (iOS) or Jenkins (Android) build log.** Auto-detects provider from URL. Extracts 25+ error patterns with line numbers and context |
 
 ---
 
@@ -132,11 +135,13 @@ TRANSPORT=http npm start
 > All prompts below are **✅ verified working** — copy and paste directly into your agent.
 
 <details open>
-<summary><b>📱 App info</b></summary>
+<summary><b>📱 App info — by name or bundle ID</b></summary>
 
 ```
 Give me all info about com.trainerize.peakfitness
 List all enterprise apps
+Find all GoodLife apps
+Show apps named "Equinox"
 List all ABC studio apps
 ```
 
@@ -199,6 +204,18 @@ Top 20 apps with Android 8.12.0 and Published status
 </details>
 
 <details open>
+<summary><b>📁 CSV exports</b></summary>
+
+```
+Export all AgreementIsMissing apps to CSV
+Give me a CSV of all stale enterprise apps older than 180 days
+Export the pending Apple review queue to CSV
+List all studio apps as a CSV file
+```
+
+</details>
+
+<details open>
 <summary><b>🔐 Push certs & provisioning — <code>check_cert_validity</code></b></summary>
 
 ```
@@ -222,6 +239,20 @@ Which enterprise apps have an iOS membership issue?
 
 </details>
 
+<details open>
+<summary><b>⚡ Build triggering & log analysis</b></summary>
+
+```
+Trigger a new app build for com.trainerize.peakfitness
+Deploy com.trainerize.abcplus to TestFlight
+Is the Bitrise build abc123 done?
+Why did build https://app.bitrise.io/build/abc123 fail?
+Analyse the Jenkins build https://jenkins.example.com/job/CBFA-Android/42/
+What went wrong with this build? https://app.bitrise.io/app/de36db0d3356751f/build/dcf6c9e0-...
+```
+
+</details>
+
 ---
 
 ## 🗺️ Roadmap
@@ -231,10 +262,10 @@ Which enterprise apps have an iOS membership issue?
 | 1 — Scaffold | ✅ | Transports, auth guards, tool stubs, structured logging, CLI banner |
 | 2 — Data layer | ✅ | S3 CSV downloader, parser, in-memory app registry |
 | 3 — Read tools | ✅ | All 10 read tools live with real CSV + Admin API data |
-| 3.1 — Reports | ✅ | `query_apps` flexible filter + log redaction security |
+| 3.1 — Reports | ✅ | `query_apps` flexible filter + CSV export + name/display_name search |
 | 3.2 — Cert validity | ✅ | `check_cert_validity` via existing Admin API |
 | 3.3 — iOS Membership | ✅ | `IOSMembership` mapped; `AgreementIsMissing` filter across tools |
-| 4 — Action tools | ⏳ | Bitrise + Jenkins build trigger/status |
+| 4 — Action tools | ✅ | Bitrise iOS build trigger, status polling, log analysis (Bitrise + Jenkins) |
 | 5 — Deploy | 🔮 | EC2 / Cloud Run with HTTP transport |
 
 ---
@@ -268,18 +299,19 @@ Set it in your mcp.json env block:
 ```
 cbfa-mcp/
 ├── src/
-│   ├── index.ts            # Entry point — picks transport from TRANSPORT env
-│   ├── server.ts           # McpServer + tool proxy for logging
-│   ├── config.ts           # Typed env config + credential status log
-│   ├── banner.ts           # Decorative CLI startup banner
-│   ├── logger.ts           # Structured stderr logging + sensitive field redaction
-│   ├── auth/validator.ts   # Auth guards — throws descriptive McpError on missing creds
-│   ├── clients/            # Axios clients: admin-panel, bitrise, jenkins
-│   ├── data/               # S3 downloader, CSV parser, in-memory app registry
-│   ├── tools/read/         # 10 read tools
-│   ├── tools/action/       # 2 action tools (stubs)
-│   └── transport/          # stdio + HTTP (Streamable + SSE) transports
-└── .env.example            # Credential template
+│   ├── index.ts              # Entry point — picks transport from TRANSPORT env
+│   ├── server.ts             # McpServer + tool proxy for logging
+│   ├── config.ts             # Typed env config + credential status log
+│   ├── banner.ts             # Decorative CLI startup banner
+│   ├── logger.ts             # Structured stderr logging + sensitive field redaction
+│   ├── auth/validator.ts     # Auth guards — throws descriptive McpError on missing creds
+│   ├── clients/              # Axios singletons: admin-panel, bitrise, jenkins
+│   ├── data/                 # S3 downloader, CSV parser, in-memory app registry
+│   ├── utils/csv.ts          # RFC 4180 CSV serialiser (toCSV helper)
+│   ├── tools/read/           # 10 read tools (list, query, status, certs, queues…)
+│   ├── tools/action/         # 3 action tools: trigger-build, get-build-status, analyze-build-log
+│   └── transport/            # stdio + HTTP (Streamable + SSE) transports
+└── .env.example              # Credential template
 ```
 
 ---

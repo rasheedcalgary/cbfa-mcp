@@ -890,7 +890,7 @@
     </div>
     <div class="hero-stats">
       <div class="stat"><div class="stat-n">30k+</div><div class="stat-l">Apps in registry</div></div>
-      <div class="stat"><div class="stat-n">11</div><div class="stat-l">MCP tools</div></div>
+      <div class="stat"><div class="stat-n">13</div><div class="stat-l">MCP tools</div></div>
       <div class="stat"><div class="stat-n">3</div><div class="stat-l">Agent transports</div></div>
       <div class="stat"><div class="stat-n">Zero</div><div class="stat-l">Manual lookups, exports<br/>or API spelunking</div></div>
     </div>
@@ -925,7 +925,7 @@
 <section id="tools" class="tools-section">
   <div class="container">
     <span class="section-eyebrow fade-up">Capabilities</span>
-    <h2 class="section-title fade-up">11 tools, zero boilerplate</h2>
+    <h2 class="section-title fade-up">13 tools, zero boilerplate</h2>
     <p class="section-sub fade-up">Every tool validates auth, redacts sensitive values from logs, and returns actionable error messages when credentials are missing.</p>
 
     <div class="tools-grid fade-up">
@@ -935,7 +935,7 @@
           <div><div class="tool-name">list_apps</div></div>
           <span class="tool-badge badge-read">READ</span>
         </div>
-        <p class="tool-desc">List all CBA apps in the registry, with optional filter by type — enterprise, studio, pro, or abc.</p>
+        <p class="tool-desc">List all CBA apps in the registry, with optional filter by type — enterprise, studio, pro, or abc. Export as <code>csv</code> or formatted table.</p>
         <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
       </div>
 
@@ -985,7 +985,7 @@
           <div><div class="tool-name">get_pending_apps</div></div>
           <span class="tool-badge badge-read">READ</span>
         </div>
-        <p class="tool-desc">Apps stuck in queues — PendingAppleSubmission, PendingAppleAgreement, MissingIOSMembership, PendingGooglePlayKey.</p>
+        <p class="tool-desc">Apps stuck in queues — PendingAppleSubmission, PendingAppleAgreement, MissingIOSMembership, PendingGooglePlayKey. Export as <code>csv</code>.</p>
         <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
       </div>
 
@@ -995,7 +995,7 @@
           <div><div class="tool-name">get_stale_apps</div></div>
           <span class="tool-badge badge-read">READ</span>
         </div>
-        <p class="tool-desc">Apps not updated within a configurable threshold (default 180 days), filterable by type and platform.</p>
+        <p class="tool-desc">Apps not updated within a configurable threshold (default 180 days), filterable by type and platform. Export as <code>csv</code>.</p>
         <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
       </div>
 
@@ -1015,7 +1015,7 @@
           <div><div class="tool-name">query_apps</div></div>
           <span class="tool-badge badge-read">READ</span>
         </div>
-        <p class="tool-desc">Flexible AND-filter report across version, CBA status, App Store state, iOS membership, app type, and business.</p>
+        <p class="tool-desc">Flexible AND-filter report across version, CBA status, App Store state, iOS membership, app type, business, and <strong>app name</strong> (partial match). Export as <code>csv</code>.</p>
         <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
       </div>
 
@@ -1035,7 +1035,27 @@
           <div><div class="tool-name">trigger_app_build</div></div>
           <span class="tool-badge badge-action">ACTION</span>
         </div>
-        <p class="tool-desc">Trigger an iOS or Android build on Bitrise or Jenkins. Returns build ID and queue URL. <em>(Phase 4)</em></p>
+        <p class="tool-desc">Trigger an iOS build on Bitrise. <code>new_app</code> → <em>New_App_Creation_Flow</em>. <code>update</code> → <em>DEPLOY_testflight_S3_2026</em>. Returns build number and Bitrise URL.</p>
+        <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
+      </div>
+
+      <div class="tool-card" data-tool="get_build_status">
+        <div class="tool-card-top">
+          <div class="tool-icon icon-action">📡</div>
+          <div><div class="tool-name">get_build_status</div></div>
+          <span class="tool-badge badge-action">ACTION</span>
+        </div>
+        <p class="tool-desc">Poll a Bitrise build by URL or slug. Returns status, duration, workflow, and branch. On failure, automatically suggests running <code>analyze_build_log</code>.</p>
+        <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
+      </div>
+
+      <div class="tool-card" data-tool="analyze_build_log">
+        <div class="tool-card-top">
+          <div class="tool-icon icon-action">🔬</div>
+          <div><div class="tool-name">analyze_build_log</div></div>
+          <span class="tool-badge badge-action">ACTION</span>
+        </div>
+        <p class="tool-desc">Fetch and analyse a Bitrise (iOS) or Jenkins (Android) build log. Auto-detects CI provider from URL. Extracts 25+ error patterns — code-sign, Xcode, Gradle, lint — with line numbers and context.</p>
         <div class="tap-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg> Tap for usage details</div>
       </div>
     </div>
@@ -1143,8 +1163,8 @@
             <div class="arch-mcp-item-desc">Every tool validates credentials before executing. Throws structured McpError on failure.</div>
           </div>
           <div class="arch-mcp-item">
-            <div class="arch-mcp-item-name">🗂️ 11 MCP Tools</div>
-            <div class="arch-mcp-item-desc">10 read tools + 1 action tool — registered at startup, served over stdio or HTTP.</div>
+            <div class="arch-mcp-item-name">🗂️ 13 MCP Tools</div>
+            <div class="arch-mcp-item-desc">10 read tools + 3 action tools (trigger, status, log analysis) — registered at startup, served over stdio or HTTP.</div>
           </div>
         </div>
       </div>
@@ -1350,7 +1370,7 @@
       <h4>Tools</h4>
       <ul>
         <li><a href="#tools">Read Tools (10)</a></li>
-        <li><a href="#tools">Action Tools (1+)</a></li>
+        <li><a href="#tools">Action Tools (3)</a></li>
         <li><a href="#architecture">Architecture</a></li>
         <li><a href="#integration">stdio Transport</a></li>
         <li><a href="#integration">HTTP Transport</a></li>
@@ -1707,34 +1727,36 @@ REP Society — com.trainerize.repsociety1
     },
     get_pending_apps: {
       icon: '⏳', type: 'READ · requires ADMIN_PANEL_API_KEY',
-      desc: 'Scans all apps and returns those stuck in publishing queues. Supports 4 queue types: PendingAppleSubmission (Submitted/ReceivedArtifacts), PendingAppleAgreement (Notified), MissingIOSMembership (AgreementIsMissing/Expired), PendingGooglePlayKey (no Play account).',
+      desc: 'Scans all apps and returns those stuck in publishing queues. Supports 4 queue types: PendingAppleSubmission (Submitted/ReceivedArtifacts), PendingAppleAgreement (Notified), MissingIOSMembership (AgreementIsMissing/Expired), PendingGooglePlayKey (no Play account). Export results as CSV.',
       params: [
-        { name: 'queue', req: false, desc: 'Filter to a specific queue: PendingPublishList | PendingAppleSubmission | PendingAppleAgreement | MissingIOSMembership | PendingGooglePlayKey. Omit to see all queues.' }
+        { name: 'queue', req: false, desc: 'Filter to a specific queue: PendingPublishList | PendingAppleSubmission | PendingAppleAgreement | MissingIOSMembership | PendingGooglePlayKey. Omit to see all queues.' },
+        { name: 'format', req: false, desc: '"table" (default) or "csv" to download a report.' }
       ],
       queries: [
         { icon: '⏳', text: 'What apps are pending Apple review right now?' },
         { icon: '⏳', text: 'Which apps are waiting for artwork?' },
         { icon: '⏳', text: 'Which apps have a missing Google Play account?' },
         { icon: '⏳', text: 'Show apps in the MissingIOSMembership queue' },
-        { icon: '⏳', text: 'What apps are stuck in publishing queues?' },
+        { icon: '⏳', text: 'Export the AgreementIsMissing queue to CSV' },
       ],
-      note: 'An app can appear in multiple queues simultaneously — e.g. both <strong>MissingIOSMembership</strong> and <strong>PendingAppleAgreement</strong>.'
+      note: 'An app can appear in multiple queues simultaneously — e.g. both <strong>MissingIOSMembership</strong> and <strong>PendingAppleAgreement</strong>. Use <strong>format: "csv"</strong> for bulk exports.'
     },
     get_stale_apps: {
       icon: '🕰️', type: 'READ · requires ADMIN_PANEL_API_KEY',
-      desc: 'Returns apps that have not shipped a new release within a configurable number of days. Filterable by app type and platform. Results are sorted by days since last update, oldest first.',
+      desc: 'Returns apps that have not shipped a new release within a configurable number of days. Filterable by app type and platform. Results are sorted by days since last update, oldest first. Export as CSV.',
       params: [
         { name: 'days', req: false, desc: 'Staleness threshold in days. Default: 180.' },
         { name: 'app_type', req: false, desc: 'Filter by type: enterprise | studio | pro | abc.' },
-        { name: 'platform', req: false, desc: 'Filter by platform: ios | android. Omit to check both.' }
+        { name: 'platform', req: false, desc: 'Filter by platform: ios | android. Omit to check both.' },
+        { name: 'format', req: false, desc: '"table" (default) or "csv" to download a report.' }
       ],
       queries: [
         { icon: '🕰️', text: 'Which enterprise apps haven\'t shipped in 6 months?' },
         { icon: '🕰️', text: 'Show me stale studio apps older than 90 days' },
         { icon: '🕰️', text: 'Which ABC apps are stale on iOS?' },
-        { icon: '🕰️', text: 'What apps haven\'t been updated in over a year?' },
+        { icon: '🕰️', text: 'Export all stale enterprise apps to CSV' },
       ],
-      note: 'Staleness is calculated from the <strong>Published</strong> (iOS) and <strong>Created</strong> (Android) CSV fields against today\'s date.'
+      note: 'Staleness is calculated from the <strong>Published</strong> (iOS) and <strong>Created</strong> (Android) CSV fields against today\'s date. Use <strong>format: "csv"</strong> for bulk exports.'
     },
     get_build_queue: {
       icon: '🏗️', type: 'READ · requires ADMIN_PANEL_API_KEY',
@@ -1753,8 +1775,9 @@ REP Society — com.trainerize.repsociety1
     },
     query_apps: {
       icon: '📊', type: 'READ · requires ADMIN_PANEL_API_KEY',
-      desc: 'Flexible report-style query across the full app registry. All filters are optional and AND-combined. Returns a formatted table including bundle ID, name, iOS/Android version, CBA status, App Store state, iOS membership, type, and business.',
+      desc: 'Flexible report-style query across the full app registry. All filters are optional and AND-combined. Supports partial name search via display_name. Returns a formatted table or CSV including bundle ID, name, iOS/Android version, CBA status, App Store state, iOS membership, type, and business.',
       params: [
+        { name: 'display_name', req: false, desc: 'Partial, case-insensitive match on the app display name — e.g. "GoodLife" or "Peak Fitness".' },
         { name: 'ios_version', req: false, desc: 'Exact iOS version to match, e.g. "8.16.0".' },
         { name: 'android_version', req: false, desc: 'Exact Android version to match.' },
         { name: 'status', req: false, desc: 'CBA lifecycle status: Published | WaitingForArtwork | Notified | Submitted | PendingPublish | Deactivated.' },
@@ -1762,16 +1785,18 @@ REP Society — com.trainerize.repsociety1
         { name: 'ios_membership', req: false, desc: 'iOS membership status (partial match): AgreementIsMissing | Active | Expired.' },
         { name: 'app_type', req: false, desc: 'Product type: enterprise | studio | pro | abc.' },
         { name: 'business_type', req: false, desc: 'Business owner: "ABC" or "Trainerize".' },
+        { name: 'format', req: false, desc: '"table" (default) or "csv" to download a report.' },
         { name: 'limit', req: false, desc: 'Max rows to return. Default: 200.' }
       ],
       queries: [
         { icon: '📊', text: 'List all iOS 8.16.0 Published enterprise apps' },
+        { icon: '📊', text: 'Find all GoodLife apps' },
         { icon: '📊', text: 'Show me ABC apps that are WaitingForArtwork' },
         { icon: '📊', text: 'Which Trainerize studio apps are ReadyForSale on iOS?' },
         { icon: '📊', text: 'Which apps have AgreementIsMissing in iOS membership?' },
-        { icon: '📊', text: 'Top 20 apps with Android 8.12.0 and Published status' },
+        { icon: '📊', text: 'Export all Published enterprise apps to CSV' },
       ],
-      note: 'All filters are <strong>AND-combined</strong>. Use <strong>ios_membership</strong> with value "AgreementIsMissing" to find all membership-blocked apps.'
+      note: 'All filters are <strong>AND-combined</strong>. Use <strong>display_name</strong> for name-based search. Use <strong>format: "csv"</strong> to get a downloadable CSV report.'
     },
     check_cert_validity: {
       icon: '🔐', type: 'READ · requires ADMIN_PANEL_API_KEY',
@@ -1792,20 +1817,52 @@ REP Society — com.trainerize.repsociety1
       note: 'Severity levels: <strong>💀 Expired</strong> (past expiry), <strong>🔴 Critical</strong> (≤30d), <strong>⚠️ Warning</strong> (≤60d), <strong>✅ Healthy</strong> (>60d). Bulk scan uses 5 concurrent API calls.'
     },
     trigger_app_build: {
-      icon: '⚡', type: 'ACTION · requires BITRISE_TOKEN or Jenkins credentials',
-      desc: 'Triggers an iOS or Android build on Bitrise or Jenkins for a given app. Returns the build ID, queue URL, and trigger timestamp. Phase 4 — implementation in progress.',
+      icon: '⚡', type: 'ACTION · requires BITRISE_TOKEN + BITRISE_APP_SLUG',
+      desc: 'Triggers an iOS build on Bitrise for a given CBA app. Automatically selects the correct workflow: New_App_Creation_Flow for first-time app creation, or DEPLOY_testflight_S3_2026 for batch/TestFlight updates. Passes BUNDLE_ID, APP_NAME, and BITRISE_WORKFLOW as env vars to the build.',
       params: [
-        { name: 'bundle_id', req: true, desc: 'Bundle ID of the app to build.' },
-        { name: 'platform', req: true, desc: 'Build platform: ios | android | both.' },
-        { name: 'provider', req: false, desc: 'CI provider: bitrise (default) | jenkins.' },
-        { name: 'workflow', req: false, desc: 'Specific Bitrise workflow name. Uses app default if omitted.' }
+        { name: 'bundle_id', req: true, desc: 'Bundle ID of the app to build, e.g. com.trainerize.peakfitness.' },
+        { name: 'build_type', req: true, desc: '"new_app" → New_App_Creation_Flow. "update" → DEPLOY_testflight_S3_2026.' },
+        { name: 'platform', req: false, desc: 'Build platform. Only "ios" is currently implemented. Default: ios.' },
+        { name: 'branch', req: false, desc: 'Git branch to build. Uses the workflow default if omitted.' },
+        { name: 'workflow_override', req: false, desc: 'Override the workflow name. Leave empty to use the build_type default.' }
       ],
       queries: [
-        { icon: '⚡', text: 'Trigger a Bitrise iOS build for com.trainerize.peakfitness' },
-        { icon: '⚡', text: 'Build Android for com.trainerize.abcplus on Jenkins' },
-        { icon: '⚡', text: 'Is the build for com.trainerize.peakfitness done yet?' },
+        { icon: '⚡', text: 'Trigger a new app build for com.trainerize.peakfitness' },
+        { icon: '⚡', text: 'Deploy com.trainerize.abcplus to TestFlight' },
+        { icon: '⚡', text: 'Start a new_app iOS build for com.trainerize.eosfitness' },
+        { icon: '⚡', text: 'Trigger an update build for com.trainerize.goodlifefitness' },
       ],
-      note: '⚠️ <strong>Phase 4 — in progress.</strong> Currently returns a stub response. Requires <strong>BITRISE_TOKEN</strong> (Bitrise) or <strong>JENKINS_URL + JENKINS_USER + JENKINS_API_KEY</strong> (Jenkins) in <code>.env</code>.'
+      note: 'Requires <strong>BITRISE_TOKEN</strong> and <strong>BITRISE_APP_SLUG</strong> in <code>.env</code>. Android builds via Jenkins are not yet implemented.'
+    },
+    get_build_status: {
+      icon: '📡', type: 'ACTION · requires BITRISE_TOKEN',
+      desc: 'Polls a Bitrise build for its current state. Accepts a full Bitrise build URL (https://app.bitrise.io/build/{slug}) or a raw build slug. Returns status, duration, workflow, branch, and trigger time. On failure, suggests running analyze_build_log for root cause analysis.',
+      params: [
+        { name: 'build_id', req: true, desc: 'Full Bitrise build URL or raw build slug (UUID format).' }
+      ],
+      queries: [
+        { icon: '📡', text: 'Is the Bitrise build abc123 done?' },
+        { icon: '📡', text: 'Check status of https://app.bitrise.io/build/7afd97e5-56ed-4412...' },
+        { icon: '📡', text: 'Did the latest TestFlight deploy succeed?' },
+      ],
+      note: 'On a <strong>failed</strong> build, the response will suggest using <strong>analyze_build_log</strong> to dig into the error details.'
+    },
+    analyze_build_log: {
+      icon: '🔬', type: 'ACTION · requires BITRISE_TOKEN (iOS) or Jenkins credentials (Android)',
+      desc: 'Fetches and analyses a Bitrise (iOS) or Jenkins (Android) build log. Auto-detects the CI provider from the URL — no manual selection needed. Extracts 25+ error and warning patterns including Xcode compiler errors, code-signing failures, CocoaPods issues, Gradle build failures, lint errors, and step-level failures. Returns a labelled list of findings with line numbers, severity, and configurable context lines.',
+      params: [
+        { name: 'build_id', req: true, desc: 'Build URL or slug. Bitrise: https://app.bitrise.io/build/{slug} or just the slug. Jenkins: full build URL e.g. https://jenkins.example.com/job/CBFA-Android/42/' },
+        { name: 'provider', req: false, desc: '"auto" (default) — detected from URL. Override with "bitrise" or "jenkins" if needed.' },
+        { name: 'include_warnings', req: false, desc: 'Include warning-level matches alongside errors. Default: true.' },
+        { name: 'context_lines', req: false, desc: 'Lines of log context above/below each match. Range: 0–10. Default: 2.' }
+      ],
+      queries: [
+        { icon: '🔬', text: 'Why did build https://app.bitrise.io/build/dcf6c9e0-... fail?' },
+        { icon: '🔬', text: 'Analyse the Jenkins build https://jenkins.example.com/job/CBFA-Android/42/' },
+        { icon: '🔬', text: 'What went wrong with this Bitrise build? https://app.bitrise.io/app/de36db0d3356751f/build/7afd97e5-...' },
+        { icon: '🔬', text: 'Check errors in Bitrise build 7afd97e5-56ed-4412-a0e8-cecc3a3d034b' },
+      ],
+      note: 'For <strong>archived Bitrise builds</strong> logs are fetched directly from the S3 pre-signed URL. For <strong>live builds</strong> log chunks are streamed. Jenkins logs come from <code>/consoleText</code>.'
     },
   };
 
@@ -1814,7 +1871,8 @@ REP Society — com.trainerize.repsociety1
     if (!tool) return;
 
     document.getElementById('panelIcon').textContent = tool.icon;
-    document.getElementById('panelIcon').className = `panel-tool-icon ${toolKey === 'trigger_app_build' ? 'icon-action' : 'icon-read'}`;
+    const actionTools = ['trigger_app_build', 'get_build_status', 'analyze_build_log'];
+    document.getElementById('panelIcon').className = `panel-tool-icon ${actionTools.includes(toolKey) ? 'icon-action' : 'icon-read'}`;
     document.getElementById('panelName').textContent = toolKey;
     document.getElementById('panelType').textContent = tool.type;
 
