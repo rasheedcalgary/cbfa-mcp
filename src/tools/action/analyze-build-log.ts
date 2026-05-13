@@ -82,7 +82,7 @@ interface BitriseLogResponse {
 
 /** Parses a build slug out of a full Bitrise URL or returns input unchanged. */
 function parseBuildSlug(input: string): string {
-  const match = input.match(/\/build\/([a-f0-9]+)/i);
+  const match = input.match(/\/build\/([a-f0-9-]+)/i);
   return match ? match[1] : input.trim();
 }
 
