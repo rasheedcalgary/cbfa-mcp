@@ -16,6 +16,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { validateAdminPanelAuth } from "../../auth/validator.js";
 import { getAllApps } from "../../data/appRegistry.js";
+import { toCSV } from "../../utils/csv.js";
 import type { AppType, AppRecord } from "../../types/index.js";
 
 /** Days since a date string; returns Infinity if unparseable (always stale). */
@@ -58,8 +59,12 @@ export function registerGetStaleApps(server: McpServer): void {
         .describe(
           "'either' = stale on at least one platform (default). 'both' = stale on both platforms."
         ),
+      format: z
+        .enum(["table", "csv"])
+        .default("table")
+        .describe("Output format. 'table' (default) or 'csv' for a downloadable report."),
     },
-    async ({ days_threshold, app_type, platform }) => {
+    async ({ days_threshold, app_type, platform, format }) => {
       validateAdminPanelAuth();
 
       const apps = await getAllApps(app_type as AppType | undefined);
@@ -116,6 +121,27 @@ export function registerGetStaleApps(server: McpServer): void {
         };
       }
 
+      // ── CSV output ───────────────────────────────────────────────────────
+      if (format === "csv") {
+        const headers = [
+          "bundle_id", "display_name", "app_type", "team_name",
+          "last_ios_updated", "ios_days_stale", "last_android_updated", "android_days_stale", "reason",
+        ];
+        const csvRows = staleEntries.map(({ app, iosDays, androidDays, reason }) => [
+          app.bundle_id, app.display_name, app.app_type, app.team_name,
+          app.last_ios_updated, isFinite(iosDays) ? iosDays : "",
+          app.last_android_updated, isFinite(androidDays) ? androidDays : "",
+          reason,
+        ]);
+        return {
+          content: [{
+            type: "text" as const,
+            text: `# Stale Apps Report — threshold: ${days_threshold}d, platform: ${platform}${app_type ? `, type: ${app_type}` : ""}\n# Generated: ${new Date().toISOString()}\n\n${toCSV(headers, csvRows)}`,
+          }],
+        };
+      }
+
+      // ── Table output ─────────────────────────────────────────────────────
       const header = [
         "Bundle ID".padEnd(50),
         "Display Name".padEnd(30),

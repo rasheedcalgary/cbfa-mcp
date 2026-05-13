@@ -16,6 +16,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { validateAdminPanelAuth } from "../../auth/validator.js";
 import { getAllApps, getRegistryMeta } from "../../data/appRegistry.js";
+import { toCSV } from "../../utils/csv.js";
 import type { AppType } from "../../types/index.js";
 
 export function registerListApps(server: McpServer): void {
@@ -27,8 +28,12 @@ export function registerListApps(server: McpServer): void {
         .enum(["enterprise", "studio", "pro", "abc"])
         .optional()
         .describe("Filter by app product type. Omit to return all apps."),
+      format: z
+        .enum(["table", "csv"])
+        .default("table")
+        .describe("Output format. 'table' (default) or 'csv' for a downloadable report."),
     },
-    async ({ app_type }) => {
+    async ({ app_type, format }) => {
       validateAdminPanelAuth();
 
       const apps = await getAllApps(app_type as AppType | undefined);
@@ -45,7 +50,19 @@ export function registerListApps(server: McpServer): void {
         };
       }
 
-      // Build a fixed-width table
+      // ── CSV output ───────────────────────────────────────────────────────
+      if (format === "csv") {
+        const headers = ["bundle_id", "display_name", "group_id", "team_name", "app_type"];
+        const csvRows = apps.map((a) => [a.bundle_id, a.display_name, a.group_id, a.team_name, a.app_type]);
+        return {
+          content: [{
+            type: "text" as const,
+            text: `# CBA App List${app_type ? ` — type: ${app_type}` : ""}\n# Generated: ${new Date().toISOString()}\n\n${toCSV(headers, csvRows)}`,
+          }],
+        };
+      }
+
+      // ── Table output ─────────────────────────────────────────────────────
       const header = [
         "Bundle ID".padEnd(50),
         "Display Name".padEnd(35),

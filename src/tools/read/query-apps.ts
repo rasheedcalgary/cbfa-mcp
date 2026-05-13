@@ -32,6 +32,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { validateAdminPanelAuth } from "../../auth/validator.js";
 import { getAllApps, getRegistryMeta } from "../../data/appRegistry.js";
+import { toCSV } from "../../utils/csv.js";
 import type { AppType } from "../../types/index.js";
 
 const CBA_STATUSES = [
@@ -91,8 +92,12 @@ export function registerQueryApps(server: McpServer): void {
         .positive()
         .default(200)
         .describe("Maximum number of results to return. Defaults to 200."),
+      format: z
+        .enum(["table", "csv"])
+        .default("table")
+        .describe("Output format. 'table' (default) returns a formatted text table. 'csv' returns RFC 4180 CSV ready to save as a .csv file."),
     },
-    async ({ display_name, ios_version, android_version, status, ios_store_status, ios_membership, app_type, business_type, limit }) => {
+    async ({ display_name, ios_version, android_version, status, ios_store_status, ios_membership, app_type, business_type, limit, format }) => {
       validateAdminPanelAuth();
 
       const allApps = await getAllApps(app_type as AppType | undefined);
@@ -125,7 +130,27 @@ export function registerQueryApps(server: McpServer): void {
         };
       }
 
-      // Build table
+      // ── CSV output ───────────────────────────────────────────────────────
+      if (format === "csv") {
+        const headers = [
+          "bundle_id", "display_name", "ios_version", "android_version",
+          "status", "app_store_state", "ios_membership", "app_type", "business",
+        ];
+        const csvRows = shown.map((app) => [
+          app.bundle_id, app.display_name, app.ios_version, app.android_version,
+          app.status, app.app_store_state, app.ios_membership, app.app_type, app.team_name,
+        ]);
+        const filterDesc = buildFilterDesc({ display_name, ios_version, android_version, status, ios_store_status, ios_membership, app_type, business_type });
+        const truncNote = total > limit ? ` (showing first ${limit} of ${total})` : "";
+        return {
+          content: [{
+            type: "text" as const,
+            text: `# CBA App Report — filters: [${filterDesc || "none"}]${truncNote}\n# Generated: ${new Date().toISOString()}\n\n${toCSV(headers, csvRows)}`,
+          }],
+        };
+      }
+
+      // ── Table output ─────────────────────────────────────────────────────
       const header = [
         "#".padStart(4),
         "Bundle ID".padEnd(52),

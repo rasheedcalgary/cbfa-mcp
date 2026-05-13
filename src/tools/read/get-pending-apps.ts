@@ -26,6 +26,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { validateAdminPanelAuth } from "../../auth/validator.js";
 import { getAllApps } from "../../data/appRegistry.js";
+import { toCSV } from "../../utils/csv.js";
 import type { AppRecord } from "../../types/index.js";
 
 const PENDING_QUEUES = [
@@ -87,8 +88,12 @@ export function registerGetPendingApps(server: McpServer): void {
         .enum(PENDING_QUEUES)
         .optional()
         .describe("Filter to a specific queue. Omit to see all pending apps across every queue."),
+      format: z
+        .enum(["table", "csv"])
+        .default("table")
+        .describe("Output format. 'table' (default) or 'csv' for a downloadable report."),
     },
-    async ({ queue }: { queue?: PendingQueue }) => {
+    async ({ queue, format }: { queue?: PendingQueue; format: "table" | "csv" }) => {
       validateAdminPanelAuth();
 
       const allApps = await getAllApps();
@@ -99,6 +104,25 @@ export function registerGetPendingApps(server: McpServer): void {
         .filter(({ queues }) => queues.length > 0);
 
       const queuesToShow: PendingQueue[] = queue ? [queue] : [...PENDING_QUEUES];
+
+      // ── CSV output ───────────────────────────────────────────────────────
+      if (format === "csv") {
+        const headers = ["bundle_id", "display_name", "app_type", "ios_membership", "queues"];
+        const csvRows = classified.flatMap(({ app, queues }) => {
+          const filtered = queue ? queues.filter((q) => q === queue) : queues;
+          if (filtered.length === 0) return [];
+          return [[app.bundle_id, app.display_name, app.app_type, app.ios_membership, filtered.join("|")]];
+        });
+        const qLabel = queue ?? "all queues";
+        return {
+          content: [{
+            type: "text" as const,
+            text: `# Pending Apps Report — ${qLabel}\n# Generated: ${new Date().toISOString()}\n\n${toCSV(headers, csvRows)}`,
+          }],
+        };
+      }
+
+      // ── Table output ─────────────────────────────────────────────────────
       const lines: string[] = [];
 
       let totalFound = 0;
