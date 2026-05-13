@@ -44,6 +44,12 @@ export interface Config {
 
   // ── Bitrise — operator-supplied via server .env ──
   bitriseToken: string | undefined;
+  /**
+   * Bitrise app slug for the CBA app. All iOS builds run under this app.
+   * Find it in Bitrise → App → Code → App Slug, or the app's URL:
+   *   https://app.bitrise.io/app/{BITRISE_APP_SLUG}
+   */
+  bitriseAppSlug: string | undefined;
 
   // ── Jenkins — operator-supplied via server .env ──
   jenkinsUrl: string | undefined;
@@ -68,6 +74,7 @@ export const config: Config = {
   adminPanelDomain: process.env.ADMIN_PANEL_DOMAIN,    // server .env
 
   bitriseToken: process.env.BITRISE_TOKEN,
+  bitriseAppSlug: process.env.BITRISE_APP_SLUG,
 
   jenkinsUrl: process.env.JENKINS_URL,
   jenkinsUser: process.env.JENKINS_USER,
@@ -90,6 +97,7 @@ export function logConfigStatus(): void {
   const infraChecks: Array<{ label: string; ok: boolean }> = [
     { label: "ADMIN_PANEL_DOMAIN   (server .env)", ok: !!config.adminPanelDomain },
     { label: "BITRISE_TOKEN        (server .env)", ok: !!config.bitriseToken },
+    { label: "BITRISE_APP_SLUG     (server .env)", ok: !!config.bitriseAppSlug },
     { label: "JENKINS credentials  (server .env)", ok: !!(config.jenkinsUrl && config.jenkinsUser && config.jenkinsApiKey) },
     { label: "AWS credentials      (server .env)", ok: !!(config.awsAccessKeyId && config.awsSecretAccessKey) },
     { label: "S3 path              (server .env)", ok: !!(config.s3Bucket && config.s3Key) },

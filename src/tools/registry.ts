@@ -25,6 +25,7 @@ import { registerCheckCertValidity } from "./read/check-cert-validity.js";
 // Action tools
 import { registerTriggerAppBuild } from "./action/trigger-build.js";
 import { registerGetBuildStatus } from "./action/get-build-status.js";
+import { registerAnalyzeBuildLog } from "./action/analyze-build-log.js";
 
 /**
  * Registers all CBA-MCP tools on the given McpServer instance.
@@ -46,4 +47,5 @@ export function registerAllTools(server: McpServer): void {
   // ── Action tools (Bitrise / Jenkins API keys) ─────────────────────────────
   registerTriggerAppBuild(server);
   registerGetBuildStatus(server);
+  registerAnalyzeBuildLog(server);
 }
