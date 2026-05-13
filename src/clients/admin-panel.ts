@@ -16,6 +16,7 @@
 import axios, { AxiosInstance, AxiosError } from "axios";
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import { config } from "../config.js";
+import { getRequestAdminPanelApiKey } from "../http/adminPanelContext.js";
 import type {
   GetNativeAppResponse,
   GetNativeAppGroupSettingsResponse,
@@ -77,6 +78,18 @@ export function resetAdminPanelClient(): void {
   _client = undefined;
 }
 
+/** Per-request header (HTTP) or server .env / stdio client env. */
+function adminPanelApiKeyForRequest(): string {
+  const k = (getRequestAdminPanelApiKey() ?? config.adminPanelApiKey)?.trim();
+  if (!k) {
+    throw new McpError(
+      ErrorCode.InvalidRequest,
+      "ADMIN_PANEL_API_KEY is missing — validateAdminPanelAuth should run before Admin API calls."
+    );
+  }
+  return k;
+}
+
 // ─── API Methods ──────────────────────────────────────────────────────────────
 
 /**
@@ -88,7 +101,7 @@ export function resetAdminPanelClient(): void {
 export async function getNativeApp(appCode: string): Promise<GetNativeAppResponse> {
   const { data } = await getClient().post<GetNativeAppResponse>(
     "/v03/sys/getNativeApp",
-    { apiKey: config.adminPanelApiKey, appCode }
+    { apiKey: adminPanelApiKeyForRequest(), appCode }
   );
   return data;
 }
@@ -105,7 +118,7 @@ export async function getNativeAppGroupSettings(
 ): Promise<GetNativeAppGroupSettingsResponse> {
   const { data } = await getClient().get<GetNativeAppGroupSettingsResponse>(
     "/v03/CBA/GetNativeAppGroupSettings",
-    { data: { apiKey: config.adminPanelApiKey, groupID } }
+    { data: { apiKey: adminPanelApiKeyForRequest(), groupID } }
   );
   return data;
 }
@@ -125,7 +138,7 @@ export async function getAppBuildQueue(
 ): Promise<GetAppBuildQueueResponse> {
   const { data } = await getClient().get<GetAppBuildQueueResponse>(
     "/v03/CBA/getAppBuildQueue",
-    { data: { apiKey: config.adminPanelApiKey, platform, status } }
+    { data: { apiKey: adminPanelApiKeyForRequest(), platform, status } }
   );
   return data;
 }

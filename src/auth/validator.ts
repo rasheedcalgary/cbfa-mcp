@@ -15,6 +15,7 @@
 
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import { config } from "../config.js";
+import { getRequestAdminPanelApiKey } from "../http/adminPanelContext.js";
 
 // ─── Read Tools (Admin Panel) ─────────────────────────────────────────────────
 
@@ -26,15 +27,16 @@ import { config } from "../config.js";
  * get_android_status, get_app_last_updated, get_pending_apps, get_stale_apps.
  */
 export function validateAdminPanelAuth(): void {
-  if (config.adminPanelApiKey) return;
+  if (getRequestAdminPanelApiKey() || config.adminPanelApiKey) return;
 
   throw new McpError(
     ErrorCode.InvalidRequest,
     [
       "Authentication failed — ADMIN_PANEL_API_KEY is not set.",
       "",
-      "Please provide your Admin Panel API key via the ADMIN_PANEL_API_KEY environment variable.",
-      "All other server credentials are pre-configured — this is the only key you need to supply.",
+      "stdio: set ADMIN_PANEL_API_KEY in your MCP client env block.",
+      "HTTP: send header X-Admin-Panel-Api-Key: <key> or Authorization: Bearer <key>,",
+      "or set ADMIN_PANEL_API_KEY in the server environment as a fallback.",
     ].join("\n")
   );
 }

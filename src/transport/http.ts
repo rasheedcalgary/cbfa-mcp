@@ -12,6 +12,10 @@
  *
  *   GET  /health — simple liveness probe (no auth required)
  *
+ * HTTP clients may authenticate read tools by sending the Admin Panel API key
+ * on each request: header `X-Admin-Panel-Api-Key` or `Authorization: Bearer <key>`.
+ * If omitted, `ADMIN_PANEL_API_KEY` from the server environment is used (fallback).
+ *
  * Both endpoints are stateless — a fresh McpServer instance is created per
  * connection, so the server can be scaled horizontally if needed.
  *
@@ -24,14 +28,24 @@ import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { createServer } from "../server.js";
 import { config } from "../config.js";
 import { logger } from "../logger.js";
+import {
+  parseAdminPanelApiKeyFromHttpHeaders,
+  runWithAdminPanelApiKeyAsync,
+} from "../http/adminPanelContext.js";
 
 // ─── SSE Session Store ────────────────────────────────────────────────────────
 
+type SseSession = {
+  transport: SSEServerTransport;
+  /** Captured from GET /sse; POST /message can override via the same headers. */
+  adminPanelApiKey: string | undefined;
+};
+
 /**
- * Maps session IDs to active SSE transports.
+ * Maps session IDs to active SSE transports (and per-session API key).
  * Required so that POST /message can route responses back to the correct stream.
  */
-const sseSessions = new Map<string, SSEServerTransport>();
+const sseSessions = new Map<string, SseSession>();
 
 // ─── Server ───────────────────────────────────────────────────────────────────
 
@@ -63,6 +77,7 @@ export async function startHttpTransport(): Promise<void> {
   // Compatible with: Claude.ai, OpenAI Agents SDK, MCP Inspector, and any
   // client that sends JSON-RPC messages via POST.
   app.post("/mcp", async (req: Request, res: Response) => {
+    const adminPanelApiKey = parseAdminPanelApiKeyFromHttpHeaders(req.headers);
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined, // stateless — each POST is independent
     });
@@ -70,8 +85,10 @@ export async function startHttpTransport(): Promise<void> {
     const server = createServer();
 
     try {
-      await server.connect(transport);
-      await transport.handleRequest(req, res, req.body);
+      await runWithAdminPanelApiKeyAsync(adminPanelApiKey, async () => {
+        await server.connect(transport);
+        await transport.handleRequest(req, res, req.body);
+      });
     } finally {
       // Clean up once the response is sent
       res.on("finish", () => {
@@ -84,13 +101,15 @@ export async function startHttpTransport(): Promise<void> {
   // Compatible with: LangChain, n8n, older agent frameworks, and any client
   // that opens a persistent EventSource connection.
   app.get("/sse", async (req: Request, res: Response) => {
+    const adminPanelApiKey = parseAdminPanelApiKeyFromHttpHeaders(req.headers);
     const transport = new SSEServerTransport("/message", res);
     const server = createServer();
 
-    await server.connect(transport);
+    await runWithAdminPanelApiKeyAsync(adminPanelApiKey, async () => {
+      await server.connect(transport);
+    });
 
-    // Track session so POST /message can route to it
-    sseSessions.set(transport.sessionId, transport);
+    sseSessions.set(transport.sessionId, { transport, adminPanelApiKey });
 
     res.on("close", () => {
       sseSessions.delete(transport.sessionId);
@@ -107,16 +126,21 @@ export async function startHttpTransport(): Promise<void> {
       return;
     }
 
-    const transport = sseSessions.get(sessionId);
+    const session = sseSessions.get(sessionId);
 
-    if (!transport) {
+    if (!session) {
       res.status(404).json({
         error: `Session "${sessionId}" not found. The SSE connection may have closed.`,
       });
       return;
     }
 
-    await transport.handlePostMessage(req, res);
+    const fromHeaders = parseAdminPanelApiKeyFromHttpHeaders(req.headers);
+    const adminPanelApiKey = fromHeaders ?? session.adminPanelApiKey;
+
+    await runWithAdminPanelApiKeyAsync(adminPanelApiKey, async () => {
+      await session.transport.handlePostMessage(req, res);
+    });
   });
 
   // ── Start listening ───────────────────────────────────────────────────────

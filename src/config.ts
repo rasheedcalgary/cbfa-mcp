@@ -8,11 +8,14 @@
  *     BITRISE_TOKEN, JENKINS_URL, JENKINS_USER, JENKINS_API_KEY,
  *     AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, S3_BUCKET, S3_KEY
  *
- *   FROM USER'S mcp.json env block (the only thing end users configure):
+ *   FROM USER'S mcp.json env block (stdio) OR HTTP headers (see adminPanelContext):
  *     ADMIN_PANEL_API_KEY
  *
- * dotenv loads the server .env first. The user's ADMIN_PANEL_API_KEY arrives
- * via the mcp.json env block and is merged in by the agent runtime — no conflict.
+ *   Optional HTTP fallback: ADMIN_PANEL_API_KEY in server .env when clients omit headers.
+ *
+ * dotenv loads the server .env first. For stdio, the MCP client supplies
+ * ADMIN_PANEL_API_KEY via its env block. For HTTP, clients send it per request
+ * (headers) or rely on ADMIN_PANEL_API_KEY in server .env as a fallback.
  */
 
 import { fileURLToPath } from "url";
