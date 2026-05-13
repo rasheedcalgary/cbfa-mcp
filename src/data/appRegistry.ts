@@ -88,6 +88,16 @@ export async function getAppByBundleId(bundleId: string): Promise<AppRecord> {
 }
 
 /**
+ * Returns apps whose display_name contains the given keyword (case-insensitive).
+ * Useful for resolving natural-language names like "Peak Fitness" to bundle IDs.
+ */
+export async function getAppsByName(keyword: string): Promise<AppRecord[]> {
+  await ensureLoaded();
+  const kw = keyword.toLowerCase();
+  return _apps.filter((a) => a.display_name.toLowerCase().includes(kw));
+}
+
+/**
  * Returns apps whose app_store_state or android_store_state contains
  * the given keyword (case-insensitive).
  */

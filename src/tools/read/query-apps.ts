@@ -5,6 +5,7 @@
  * combinable filters. Returns a formatted table.
  *
  * Filters (all optional, AND-combined):
+ *   display_name     — partial case-insensitive match on app name, e.g. "Peak Fitness"
  *   ios_version      — exact iOS version, e.g. "8.16.0"
  *   android_version  — exact Android version
  *   status           — CBA lifecycle status: Published | WaitingForArtwork |
@@ -23,6 +24,8 @@
  *   - "Show me enterprise apps with status Published and iOS ReadyForSale"
  *   - "Which ABC apps are still WaitingForArtwork?"
  *   - "How many studio apps are on Android version 8.16.0?"
+ *   - "Find apps named Peak Fitness"
+ *   - "Show all GoodLife apps"
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -46,8 +49,12 @@ const IOS_STORE_STATUSES = ["ReadyForSale", "None"] as const;
 export function registerQueryApps(server: McpServer): void {
   server.tool(
     "query_apps",
-    "Flexible report query on CBA apps — filter by iOS/Android version, CBA status, App Store status, app type, or business. All filters are optional and AND-combined.",
+    "Flexible report query on CBA apps — filter by app name, iOS/Android version, CBA status, App Store status, iOS membership, app type, or business. All filters are optional and AND-combined.",
     {
+      display_name: z
+        .string()
+        .optional()
+        .describe("Partial case-insensitive match on the app display name, e.g. \"Peak Fitness\" or \"GoodLife\"."),
       ios_version: z
         .string()
         .optional()
@@ -85,7 +92,7 @@ export function registerQueryApps(server: McpServer): void {
         .default(200)
         .describe("Maximum number of results to return. Defaults to 200."),
     },
-    async ({ ios_version, android_version, status, ios_store_status, ios_membership, app_type, business_type, limit }) => {
+    async ({ display_name, ios_version, android_version, status, ios_store_status, ios_membership, app_type, business_type, limit }) => {
       validateAdminPanelAuth();
 
       const allApps = await getAllApps(app_type as AppType | undefined);
@@ -93,6 +100,7 @@ export function registerQueryApps(server: McpServer): void {
 
       // AND-combine all active filters
       const results = allApps.filter((app) => {
+        if (display_name     && !app.display_name.toLowerCase().includes(display_name.toLowerCase())) return false;
         if (ios_version      && app.ios_version      !== ios_version)      return false;
         if (android_version  && app.android_version  !== android_version)  return false;
         if (status           && app.status           !== status)           return false;
@@ -106,7 +114,7 @@ export function registerQueryApps(server: McpServer): void {
       const shown = results.slice(0, limit);
 
       if (shown.length === 0) {
-        const filterDesc = buildFilterDesc({ ios_version, android_version, status, ios_store_status, ios_membership, app_type, business_type });
+        const filterDesc = buildFilterDesc({ display_name, ios_version, android_version, status, ios_store_status, ios_membership, app_type, business_type });
         return {
           content: [
             {
@@ -148,7 +156,7 @@ export function registerQueryApps(server: McpServer): void {
         ].join(" | ")
       );
 
-      const filterDesc = buildFilterDesc({ ios_version, android_version, status, ios_store_status, ios_membership, app_type, business_type });
+      const filterDesc = buildFilterDesc({ display_name, ios_version, android_version, status, ios_store_status, ios_membership, app_type, business_type });
       const truncNote = total > limit ? `  (showing first ${limit} of ${total})` : "";
 
       const lines = [
@@ -169,6 +177,7 @@ export function registerQueryApps(server: McpServer): void {
 
 /** Builds a human-readable filter summary string. */
 function buildFilterDesc(filters: {
+  display_name?: string;
   ios_version?: string;
   android_version?: string;
   status?: string;
@@ -178,6 +187,7 @@ function buildFilterDesc(filters: {
   business_type?: string;
 }): string {
   const parts: string[] = [];
+  if (filters.display_name)     parts.push(`name~"${filters.display_name}"`);
   if (filters.ios_version)      parts.push(`iOS=${filters.ios_version}`);
   if (filters.android_version)  parts.push(`Android=${filters.android_version}`);
   if (filters.status)           parts.push(`status=${filters.status}`);
