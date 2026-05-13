@@ -1,89 +1,144 @@
 /**
  * Tool: analyze_build_log
  *
- * Fetches the raw Bitrise build log and extracts error/warning sections so
- * the AI agent can diagnose failures without manually reading thousands of lines.
+ * Fetches and analyses build logs from Bitrise (iOS) or Jenkins (Android).
+ * The provider is auto-detected from the URL — no need to specify it manually.
  *
- * Flow:
- *   1. Accept a build slug or full Bitrise build URL.
- *   2. Call GET /apps/{app-slug}/builds/{build-slug}/log
- *      → If archived:  download the full log from expiring_raw_log_url (S3 presigned URL)
- *      → If live/chunked: concatenate log_chunks
- *   3. Extract lines matching known error patterns (errors, code-sign issues,
- *      failed steps, provisioning failures, linker errors, etc.)
- *   4. Return a structured error report with line numbers and context.
+ * Bitrise flow:
+ *   GET /apps/{app-slug}/builds/{build-slug}/log
+ *   → archived builds: download from expiring S3 presigned URL
+ *   → live builds:     concatenate log_chunks
  *
- * Auth required: BITRISE_TOKEN + BITRISE_APP_SLUG (server .env)
+ * Jenkins flow:
+ *   GET {build-url}/consoleText   → raw plain-text log
+ *   GET {build-url}/api/json      → build metadata (result, duration, etc.)
+ *
+ * After fetching, 25+ error patterns are applied (Xcode, Gradle, code-sign,
+ * linker, ITMS upload, CocoaPods, dependency, signing, step failures…).
+ * Matches are returned with line numbers and configurable context lines.
+ *
+ * Auth required:
+ *   Bitrise  → BITRISE_TOKEN + BITRISE_APP_SLUG
+ *   Jenkins  → JENKINS_URL + JENKINS_USER + JENKINS_API_KEY
  *
  * Example prompts:
- *   - "Analyse the build log for https://app.bitrise.io/build/abc123"
- *   - "Why did build abc123 fail?"
- *   - "Check the errors in my latest Bitrise build"
+ *   - "Why did this Bitrise build fail? https://app.bitrise.io/build/abc123"
+ *   - "Analyse the Jenkins build https://jenkins.example.com/job/CBFA-Android/42/"
+ *   - "What went wrong with build dcf6c9e0-c54b-41c0-8996-a7641ee2d48b?"
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import axios from "axios";
-import { validateBitriseAuth } from "../../auth/validator.js";
+import { validateBitriseAuth, validateJenkinsAuth } from "../../auth/validator.js";
 import { getBitriseClient } from "../../clients/bitrise.js";
+import { getJenkinsClient } from "../../clients/jenkins.js";
 import { config } from "../../config.js";
 
 // ─── Error pattern definitions ────────────────────────────────────────────────
 
 interface ErrorPattern {
-  label: string;
-  regex: RegExp;
+  label:    string;
+  regex:    RegExp;
   severity: "error" | "warning" | "info";
+  platform: "both" | "ios" | "android";
 }
 
 const ERROR_PATTERNS: ErrorPattern[] = [
-  // Xcode build failures
-  { label: "Build failed",           regex: /\*\* BUILD FAILED \*\*/i,                           severity: "error" },
-  { label: "Xcode error",            regex: /^.*error:(?! note:)/m,                              severity: "error" },
-  { label: "Linker error",           regex: /ld: (error|warning):/i,                             severity: "error" },
-  { label: "Undefined symbol",       regex: /undefined symbol/i,                                 severity: "error" },
-  { label: "Duplicate symbol",       regex: /duplicate symbol/i,                                 severity: "error" },
-  { label: "Compile error",          regex: /fatal error:/i,                                     severity: "error" },
-  // Code signing
-  { label: "Code sign error",        regex: /Code Sign error/i,                                  severity: "error" },
-  { label: "Signing error",          regex: /Signing Error/i,                                    severity: "error" },
-  { label: "No profile",             regex: /No profile for team/i,                              severity: "error" },
-  { label: "Provisioning profile",   regex: /provisioning profile/i,                             severity: "warning" },
-  { label: "Certificate expired",    regex: /certificate.*expired|expired.*certificate/i,        severity: "error" },
-  { label: "Entitlements error",     regex: /entitlements/i,                                     severity: "warning" },
-  // Bitrise step failures
-  { label: "Step failed",            regex: /\| FAILED \|/i,                                     severity: "error" },
-  { label: "Exit code",              regex: /exit code: [^0]/,                                   severity: "error" },
-  { label: "Step error",             regex: /^\[!\]/m,                                           severity: "error" },
-  // App Store / TestFlight
-  { label: "Upload error",           regex: /ERROR ITMS/i,                                       severity: "error" },
-  { label: "iTunes error",           regex: /ITSAppUsesNonExemptEncryption/i,                    severity: "warning" },
-  { label: "Missing export options", regex: /ExportOptions/i,                                    severity: "warning" },
-  // Dependency / pod issues
-  { label: "CocoaPods error",        regex: /pod install.*failed|cocoapods.*error/i,             severity: "error" },
-  { label: "Missing dependency",     regex: /could not find.*gem|module.*not found/i,            severity: "error" },
-  // Generic
-  { label: "Uncaught exception",     regex: /uncaught exception|NSException/i,                   severity: "error" },
-  { label: "Timeout",                regex: /timed? ?out/i,                                      severity: "warning" },
+  // ── Shared ─────────────────────────────────────────────────────────────────
+  { label: "Build failed",           regex: /\*\* BUILD FAILED \*\*/i,                          severity: "error",   platform: "both" },
+  { label: "Exit code non-zero",     regex: /exit code: [^0\s]/,                                severity: "error",   platform: "both" },
+  { label: "Timeout",                regex: /timed? ?out/i,                                     severity: "warning", platform: "both" },
+
+  // ── iOS / Xcode ─────────────────────────────────────────────────────────────
+  { label: "Xcode compile error",    regex: /^.*\berror:(?! note:)/m,                           severity: "error",   platform: "ios" },
+  { label: "Fatal compile error",    regex: /fatal error:/i,                                    severity: "error",   platform: "ios" },
+  { label: "Linker error",           regex: /ld: (error|warning):/i,                            severity: "error",   platform: "ios" },
+  { label: "Undefined symbol",       regex: /undefined symbol/i,                                severity: "error",   platform: "ios" },
+  { label: "Duplicate symbol",       regex: /duplicate symbol/i,                                severity: "error",   platform: "ios" },
+  { label: "Code sign error",        regex: /Code Sign error/i,                                 severity: "error",   platform: "ios" },
+  { label: "Signing error",          regex: /Signing Error/i,                                   severity: "error",   platform: "ios" },
+  { label: "No signing identity",    regex: /no signing identity|no local code signing/i,       severity: "error",   platform: "ios" },
+  { label: "No profile for team",    regex: /No profile for team/i,                             severity: "error",   platform: "ios" },
+  { label: "Cert expired",           regex: /certificate.*expired|expired.*certificate/i,       severity: "error",   platform: "ios" },
+  { label: "Provisioning profile",   regex: /provisioning profile/i,                            severity: "warning", platform: "ios" },
+  { label: "Entitlements error",     regex: /entitlements/i,                                    severity: "warning", platform: "ios" },
+  { label: "App Store upload error", regex: /ERROR ITMS/i,                                      severity: "error",   platform: "ios" },
+  { label: "Upload forbidden",       regex: /The API key in use does not allow this request/i,  severity: "error",   platform: "ios" },
+  { label: "iTunes Connect error",   regex: /ITSAppUsesNonExemptEncryption/i,                   severity: "warning", platform: "ios" },
+  { label: "Missing export options", regex: /ExportOptions/i,                                   severity: "warning", platform: "ios" },
+  { label: "CocoaPods error",        regex: /pod install.*failed|cocoapods.*error/i,            severity: "error",   platform: "ios" },
+  { label: "Bitrise step failed",    regex: /\| FAILED \|/i,                                   severity: "error",   platform: "ios" },
+  { label: "Bitrise step error",     regex: /^\[!\]/m,                                         severity: "error",   platform: "ios" },
+
+  // ── Android / Gradle ────────────────────────────────────────────────────────
+  { label: "Gradle build failed",    regex: /BUILD FAILED/,                                     severity: "error",   platform: "android" },
+  { label: "Gradle task failed",     regex: /Execution failed for task/i,                       severity: "error",   platform: "android" },
+  { label: "Gradle task FAILED",     regex: /> Task .+FAILED/,                                  severity: "error",   platform: "android" },
+  { label: "Gradle failure",         regex: /^FAILURE:/m,                                       severity: "error",   platform: "android" },
+  { label: "Java exception",         regex: /Exception in thread|java\.lang\.\w+Exception/,     severity: "error",   platform: "android" },
+  { label: "Kotlin compile error",   regex: /error: [A-Z].*\.kt:/i,                             severity: "error",   platform: "android" },
+  { label: "Dependency not found",   regex: /Could not resolve|Could not find.*\.gradle/i,      severity: "error",   platform: "android" },
+  { label: "Dependency error",       regex: /> Could not find/i,                                severity: "error",   platform: "android" },
+  { label: "Signing config error",   regex: /signing|keystore|storeFile|storePassword/i,        severity: "warning", platform: "android" },
+  { label: "APK install failed",     regex: /INSTALL_FAILED/i,                                  severity: "error",   platform: "android" },
+  { label: "Non-zero exit",          regex: /Process .+ finished with non-zero exit value/i,    severity: "error",   platform: "android" },
+  { label: "OOM / heap error",       regex: /OutOfMemoryError|java heap space/i,                severity: "error",   platform: "android" },
+  { label: "Lint error",             regex: /\d+ error(s)? found/i,                             severity: "error",   platform: "android" },
+  { label: "Google Play upload err", regex: /apkUploadException|Upload.*failed/i,               severity: "error",   platform: "android" },
+  { label: "Jenkins step failed",    regex: /^\[ERROR\]/m,                                      severity: "error",   platform: "android" },
+  { label: "Jenkins abort/failure",  regex: /Finished: (FAILURE|ABORTED)/i,                     severity: "error",   platform: "android" },
 ];
 
 // ─── Bitrise API types ────────────────────────────────────────────────────────
 
 interface BitriseLogResponse {
-  expiring_raw_log_url: string | null;
+  expiring_raw_log_url:     string | null;
   generated_log_chunks_num: number;
-  is_archived: boolean;
+  is_archived:              boolean;
   log_chunks: Array<{ chunk: string; position: number }> | null;
-  timestamp: string | null;
+  timestamp:  string | null;
+}
+
+interface JenkinsBuildInfo {
+  result:            string | null;  // SUCCESS | FAILURE | ABORTED | null (running)
+  duration:          number;         // ms
+  estimatedDuration: number;         // ms
+  timestamp:         number;         // epoch ms
+  displayName:       string;
+  fullDisplayName:   string;
+  url:               string;
+  building:          boolean;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Parses a build slug out of a full Bitrise URL or returns input unchanged. */
+type Provider = "bitrise" | "jenkins";
+
+/** Infer provider from URL. Bitrise URLs contain app.bitrise.io. */
+function detectProvider(url: string): Provider {
+  return url.includes("app.bitrise.io") ? "bitrise" : "jenkins";
+}
+
+/** Parse UUID-style or hex build slug from a Bitrise URL. */
 function parseBuildSlug(input: string): string {
   const match = input.match(/\/build\/([a-f0-9-]+)/i);
   return match ? match[1] : input.trim();
+}
+
+/**
+ * Convert a full Jenkins build URL to a path relative to JENKINS_URL.
+ * e.g. https://jenkins.example.com/job/CBFA-Android/42/ → /job/CBFA-Android/42/
+ */
+function jenkinsRelativePath(buildUrl: string): string {
+  const base = (config.jenkinsUrl ?? "").replace(/\/$/, "");
+  if (base && buildUrl.startsWith(base)) {
+    return buildUrl.slice(base.length);
+  }
+  // Fallback: strip scheme + host
+  const match = buildUrl.match(/^https?:\/\/[^/]+(\/.*)/);
+  return match ? match[1] : buildUrl;
 }
 
 interface MatchedLine {
@@ -93,15 +148,16 @@ interface MatchedLine {
   text:     string;
 }
 
-/** Scans log text for known error patterns and returns annotated matches. */
-function extractErrors(logText: string): MatchedLine[] {
-  const lines = logText.split("\n");
-  const seen = new Set<string>();
+/** Scan log text for known error patterns. */
+function extractErrors(logText: string, platform: "ios" | "android" | "both"): MatchedLine[] {
+  const lines  = logText.split("\n");
+  const seen   = new Set<string>();
   const matches: MatchedLine[] = [];
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     for (const pattern of ERROR_PATTERNS) {
+      if (pattern.platform !== "both" && pattern.platform !== platform && platform !== "both") continue;
       if (pattern.regex.test(line)) {
         const key = `${pattern.label}:${line.trim()}`;
         if (!seen.has(key)) {
@@ -110,21 +166,26 @@ function extractErrors(logText: string): MatchedLine[] {
             lineNo:   i + 1,
             label:    pattern.label,
             severity: pattern.severity,
-            text:     line.trim().slice(0, 300), // cap at 300 chars per line
+            text:     line.trim().slice(0, 300),
           });
         }
-        break; // one label per line
+        break;
       }
     }
   }
 
-  // Sort errors before warnings
   matches.sort((a, b) => {
     const rank = { error: 0, warning: 1, info: 2 };
     return rank[a.severity] - rank[b.severity];
   });
-
   return matches;
+}
+
+function fmtDuration(ms: number): string {
+  if (!ms) return "—";
+  const m = Math.floor(ms / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
 // ─── Tool registration ────────────────────────────────────────────────────────
@@ -132,137 +193,163 @@ function extractErrors(logText: string): MatchedLine[] {
 export function registerAnalyzeBuildLog(server: McpServer): void {
   server.tool(
     "analyze_build_log",
-    "Fetch the Bitrise build log for a given build and extract all errors, code-sign issues, and failed steps. Accepts a build slug or a full Bitrise build URL.",
+    "Fetch and analyse a Bitrise (iOS) or Jenkins (Android) build log. Provider is auto-detected from the URL. Extracts errors, code-sign issues, Gradle failures, and failed steps with line numbers and context.",
     {
       build_id: z
         .string()
         .describe(
-          "Build slug or full Bitrise build URL, e.g. https://app.bitrise.io/build/abc123def456"
+          "Build URL or slug. Bitrise: https://app.bitrise.io/build/{slug} or just the slug. " +
+          "Jenkins: full build URL e.g. https://jenkins.example.com/job/CBFA-Android/42/"
         ),
+      provider: z
+        .enum(["auto", "bitrise", "jenkins"])
+        .default("auto")
+        .describe("CI provider. 'auto' detects from URL (default). Override if needed."),
       include_warnings: z
         .boolean()
         .default(true)
-        .describe("Include warning-level matches in addition to errors. Default: true."),
+        .describe("Include warning-level matches alongside errors. Default: true."),
       context_lines: z
         .number()
         .int()
         .min(0)
         .max(10)
         .default(2)
-        .describe("Lines of context to show above and below each match. Default: 2."),
+        .describe("Lines of context above/below each match. Default: 2."),
     },
-    async ({ build_id, include_warnings, context_lines }) => {
-      validateBitriseAuth();
+    async ({ build_id, provider: providerHint, include_warnings, context_lines }) => {
 
-      if (!config.bitriseAppSlug) {
-        throw new McpError(
-          ErrorCode.InternalError,
-          "Server configuration error — BITRISE_APP_SLUG is not configured."
-        );
-      }
+      const provider: Provider =
+        providerHint === "auto" ? detectProvider(build_id) : providerHint;
 
-      const buildSlug = parseBuildSlug(build_id);
-      const client    = getBitriseClient();
-      const appSlug   = config.bitriseAppSlug;
+      // ── Dispatch to the right fetcher ─────────────────────────────────────
+      let logText    = "";
+      let metaLines: string[] = [];
 
-      // ── 1. Fetch log metadata ───────────────────────────────────────────
-      let logMeta: BitriseLogResponse;
-      try {
-        const { data } = await client.get<BitriseLogResponse>(
-          `/apps/${appSlug}/builds/${buildSlug}/log`
-        );
-        logMeta = data;
-      } catch (err: unknown) {
-        if (err instanceof McpError) throw err;
-        const msg = err instanceof Error ? err.message : String(err);
-        throw new McpError(
-          ErrorCode.InternalError,
-          `Bitrise API error fetching log metadata: ${msg}`
-        );
-      }
+      if (provider === "bitrise") {
+        // ── Bitrise ────────────────────────────────────────────────────────
+        validateBitriseAuth();
+        if (!config.bitriseAppSlug) {
+          throw new McpError(ErrorCode.InternalError,
+            "Server configuration error — BITRISE_APP_SLUG is not configured.");
+        }
 
-      // ── 2. Download full log text ───────────────────────────────────────
-      let logText = "";
+        const buildSlug = parseBuildSlug(build_id);
+        const client    = getBitriseClient();
+        const appSlug   = config.bitriseAppSlug;
 
-      if (logMeta.is_archived && logMeta.expiring_raw_log_url) {
-        // Archived build — download from presigned S3 URL
+        let logMeta: BitriseLogResponse;
         try {
-          const { data } = await axios.get<string>(logMeta.expiring_raw_log_url, {
+          const { data } = await client.get<BitriseLogResponse>(
+            `/apps/${appSlug}/builds/${buildSlug}/log`
+          );
+          logMeta = data;
+        } catch (err: unknown) {
+          if (err instanceof McpError) throw err;
+          throw new McpError(ErrorCode.InternalError,
+            `Bitrise API error fetching log: ${err instanceof Error ? err.message : String(err)}`);
+        }
+
+        if (logMeta.is_archived && logMeta.expiring_raw_log_url) {
+          const { data } = await axios.get<string>(logMeta.expiring_raw_log_url,
+            { responseType: "text", timeout: 30_000 });
+          logText = data;
+        } else if (logMeta.log_chunks?.length) {
+          logText = logMeta.log_chunks
+            .slice().sort((a, b) => a.position - b.position)
+            .map((c) => c.chunk).join("");
+        } else {
+          return { content: [{ type: "text" as const, text:
+            `ℹ️  No log content available yet for Bitrise build: ${buildSlug}\n` +
+            `The build may still be initialising. Try again in a few seconds.`
+          }]};
+        }
+
+        metaLines = [
+          `Provider:   Bitrise`,
+          `Build slug: ${buildSlug}`,
+          `Build URL:  https://app.bitrise.io/build/${buildSlug}`,
+        ];
+
+      } else {
+        // ── Jenkins ────────────────────────────────────────────────────────
+        validateJenkinsAuth();
+        const client   = getJenkinsClient();
+        const relPath  = jenkinsRelativePath(build_id).replace(/\/$/, "");
+
+        // Fetch build metadata
+        let buildInfo: JenkinsBuildInfo | null = null;
+        try {
+          const { data } = await client.get<JenkinsBuildInfo>(`${relPath}/api/json`);
+          buildInfo = data;
+        } catch {
+          // metadata is best-effort — log fetch is the critical part
+        }
+
+        // Fetch console log as plain text
+        try {
+          const { data } = await client.get<string>(`${relPath}/consoleText`, {
+            headers: { Accept: "text/plain" },
             responseType: "text",
-            timeout: 30_000,
+            timeout: 60_000,
           });
           logText = data;
         } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : String(err);
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Failed to download archived log from S3: ${msg}`
-          );
+          if (err instanceof McpError) throw err;
+          throw new McpError(ErrorCode.InternalError,
+            `Jenkins API error fetching console log: ${err instanceof Error ? err.message : String(err)}`);
         }
-      } else if (logMeta.log_chunks && logMeta.log_chunks.length > 0) {
-        // Live / chunked log — concatenate in order
-        logText = logMeta.log_chunks
-          .slice()
-          .sort((a, b) => a.position - b.position)
-          .map((c) => c.chunk)
-          .join("");
-      } else {
-        return {
-          content: [{
-            type: "text" as const,
-            text: [
-              `ℹ️  No log content available yet for build: ${buildSlug}`,
-              "",
-              "The build may still be initialising. Try again in a few seconds.",
-              `Build URL: https://app.bitrise.io/build/${buildSlug}`,
-            ].join("\n"),
-          }],
-        };
+
+        const result  = buildInfo?.building ? "In progress" : (buildInfo?.result ?? "Unknown");
+        const dur     = buildInfo ? fmtDuration(buildInfo.duration) : "—";
+
+        metaLines = [
+          `Provider:   Jenkins`,
+          `Job:        ${buildInfo?.fullDisplayName ?? relPath}`,
+          `Result:     ${result}`,
+          `Duration:   ${dur}`,
+          `Build URL:  ${buildInfo?.url ?? build_id}`,
+        ];
       }
 
-      // ── 3. Extract errors ───────────────────────────────────────────────
-      const allMatches = extractErrors(logText);
+      // ── Extract errors ─────────────────────────────────────────────────────
+      const platform: "ios" | "android" | "both" =
+        provider === "bitrise" ? "ios" : provider === "jenkins" ? "android" : "both";
+
+      const allMatches = extractErrors(logText, platform);
       const filtered   = include_warnings
         ? allMatches
         : allMatches.filter((m) => m.severity === "error");
 
-      const logLines = logText.split("\n");
+      const logLines   = logText.split("\n");
       const totalLines = logLines.length;
 
-      // ── 4. Build output ─────────────────────────────────────────────────
       if (filtered.length === 0) {
-        return {
-          content: [{
-            type: "text" as const,
-            text: [
-              `✅ No errors found in build log — build: ${buildSlug}`,
-              `   Log lines scanned: ${totalLines.toLocaleString()}`,
-              `   Build URL: https://app.bitrise.io/build/${buildSlug}`,
-            ].join("\n"),
-          }],
-        };
+        return { content: [{ type: "text" as const, text: [
+          `✅ No errors or warnings found in build log`,
+          ...metaLines,
+          `Log lines scanned: ${totalLines.toLocaleString()}`,
+        ].join("\n") }]};
       }
 
       const errors   = filtered.filter((m) => m.severity === "error");
       const warnings = filtered.filter((m) => m.severity === "warning");
 
       const header = [
-        `Build Log Analysis — ${buildSlug}`,
+        `Build Log Analysis`,
         `${"═".repeat(64)}`,
+        ...metaLines,
         `Log lines scanned: ${totalLines.toLocaleString()}`,
         `Errors found:      ${errors.length}`,
         `Warnings found:    ${warnings.length}`,
-        `Build URL:         https://app.bitrise.io/build/${buildSlug}`,
         "",
       ];
 
       const sections: string[] = [];
-
       for (const match of filtered) {
         const icon = match.severity === "error" ? "❌" : "⚠️ ";
         sections.push(`${icon} [${match.label}] — line ${match.lineNo}`);
 
-        // Context lines
         if (context_lines > 0) {
           const start = Math.max(0, match.lineNo - 1 - context_lines);
           const end   = Math.min(totalLines - 1, match.lineNo - 1 + context_lines);
@@ -277,10 +364,7 @@ export function registerAnalyzeBuildLog(server: McpServer): void {
       }
 
       return {
-        content: [{
-          type: "text" as const,
-          text: [...header, ...sections].join("\n"),
-        }],
+        content: [{ type: "text" as const, text: [...header, ...sections].join("\n") }],
       };
     }
   );
