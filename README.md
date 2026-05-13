@@ -5,7 +5,11 @@
 <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
 <img src="https://img.shields.io/badge/License-MIT-f5c842?style=for-the-badge" />
 
-<br /><br />
+<br />
+
+**🌐 [cba-mcp.web.app](https://cba-mcp.web.app/) — live demo & docs**
+
+<br />
 
 </div>
 
@@ -322,6 +326,7 @@ Built with ❤️ at the **Trainerize CBA Hackathon** · May 2026
 
 **© 2026 ABC Fitness Solutions**
 
+[![Website](https://img.shields.io/badge/Website-cba--mcp.web.app-00d4e8?style=flat-square&logo=firebase&logoColor=white)](https://cba-mcp.web.app/)
 [![GitHub](https://img.shields.io/badge/GitHub-cbfa--mcp-181717?style=flat-square&logo=github)](https://github.com/rasheedcalgary/cbfa-mcp)
 
 </div>

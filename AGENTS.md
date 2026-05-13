@@ -12,6 +12,8 @@ for the Trainerize **Custom Branded Apps (CBA)** platform. It exposes 13 tools t
 AI agents query app status, publishing queues, build pipelines, trigger CI/CD jobs, and
 analyse build logs — all via natural language.
 
+**Live site & interactive demo:** <https://cba-mcp.web.app/>
+
 Built in TypeScript using the official `@modelcontextprotocol/sdk`. Supports two transports:
 - **stdio** — for local agents (Cursor, Claude Desktop). Default.
 - **HTTP** — for remote agents (OpenAI Agents SDK, LangChain, n8n). Set `TRANSPORT=http`.
@@ -318,5 +320,7 @@ npm run start:http   # run built dist (HTTP)
 - Returns labelled findings with line numbers, severity (`error` / `warning`), and configurable context lines.
 
 ---
+
+**Website:** <https://cba-mcp.web.app/> · **GitHub:** <https://github.com/rasheedcalgary/cbfa-mcp>
 
 *Last updated: May 2026 — Trainerize CBA Hackathon*
