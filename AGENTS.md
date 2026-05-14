@@ -254,7 +254,7 @@ The core data type is `AppRecord` (`src/types/index.ts`). One record per CBA app
 | 3.3 — CSV export | ✅ Complete | `src/utils/csv.ts`; `format: "csv"` on `list_apps`, `query_apps`, `get_pending_apps`, `get_stale_apps` |
 | 4 — Action tools | ✅ Complete | `trigger_app_build` (Bitrise iOS), `get_build_status` (Bitrise poll), `analyze_build_log` (Bitrise + Jenkins) |
 | 4.1 — CircleCI debugger | ✅ Complete | `analyze_circleci_build` — Glofox CBA pipeline/workflow/job debugger via CircleCI API v2 + v1.1 |
-| 5 — Deploy | 🔮 Pending | EC2 / Cloud Run with HTTP transport |
+| 5 — Deploy | ✅ Complete | EC2 (HTTP transport) — live at `http://34.219.106.183:3000` |
 
 ---
 
@@ -284,22 +284,28 @@ npm run start:http   # run built dist (HTTP)
 
 ## Agent connection configs
 
+The MCP server is **already hosted on EC2** at `http://34.219.106.183:3000`.
+No local setup or deployment is needed — just add one block to your agent config.
+
 **Cursor / Claude Desktop** — add to `~/.cursor/mcp.json` or `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "cba-mcp": {
-      "command": "npm",
-      "args": ["--prefix", "/absolute/path/to/cbfa-mcp", "start"],
-      "env": { "ADMIN_PANEL_API_KEY": "your-api-key" }
+    "cba-mcp-remote": {
+      "url": "http://34.219.106.183:3000/mcp",
+      "headers": { "X-Admin-Panel-Api-Key": "your-api-key" }
     }
   }
 }
 ```
 
-**HTTP agents** — start with `TRANSPORT=http npm start` then point your agent at:
-- `POST http://localhost:3000/mcp` — Streamable HTTP (current MCP standard)
-- `GET http://localhost:3000/sse` — SSE (legacy, for LangChain / n8n)
+Replace `your-api-key` with your Admin Panel API key — that's the **only** value you supply.
+All other credentials (AWS, Bitrise, Jenkins, CircleCI) are pre-loaded on the server.
+
+**HTTP agents (OpenAI Agents SDK, LangChain, n8n)** — point directly at the hosted endpoints:
+- `POST http://34.219.106.183:3000/mcp` — Streamable HTTP (current MCP standard)
+- `GET http://34.219.106.183:3000/sse` — SSE (legacy)
+- `GET http://34.219.106.183:3000/health` — liveness probe
 
 ---
 

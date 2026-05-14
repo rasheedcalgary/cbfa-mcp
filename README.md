@@ -34,76 +34,75 @@
 
 ## 🚀 Quickstart
 
-> **Prerequisites:** Node.js 20+, AWS S3 read access, Bitrise token *(for build tools)*
+> The MCP server is **already hosted on EC2**. No cloning, no building, no `.env` files.
+> All you need is your Admin Panel API key.
 
-### Step 1 — Clone & install
+### Step 1 — Add one block to your agent config
 
-```bash
-git clone git@github.com:rasheedcalgary/cbfa-mcp.git
-cd cbfa-mcp && npm install
-```
-
-### Step 2 — Configure server credentials
-
-```bash
-cp .env.example .env
-```
-
-| Variable | Purpose |
-|---|---|
-| `ADMIN_PANEL_DOMAIN` | Admin Panel API base URL |
-| `BITRISE_TOKEN` | Bitrise API — build trigger, status, log analysis |
-| `BITRISE_APP_SLUG` | Bitrise app slug (`de36db0d3356751f`) |
-| `JENKINS_URL` + `JENKINS_USER` + `JENKINS_API_KEY` | Jenkins Android builds |
-| `CIRCLE_CI_TOKEN` | CircleCI — Glofox CBA build debugging (`glofoxinc/standalone-app-builder`) |
-| `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` + `S3_BUCKET` + `S3_KEY` | CSV data layer |
-
-> 💡 `ADMIN_PANEL_API_KEY` is **not** in `.env` — each user supplies it in their own agent config (Step 4). This is the only value users need to provide.
-
-### Step 3 — Build
-
-```bash
-npm run build
-```
-
-### Step 4 — Connect to your agent
-
-<details>
-<summary><b>🖥️ Cursor / Claude Desktop (stdio)</b> — click to expand</summary>
-
-Add this to `~/.cursor/mcp.json` or `claude_desktop_config.json`:
+**Cursor** — open `~/.cursor/mcp.json` and add:
 
 ```json
 {
   "mcpServers": {
-    "cba-mcp": {
-      "command": "npm",
-      "args": ["--prefix", "/absolute/path/to/cbfa-mcp", "start"],
-      "env": {
-        "ADMIN_PANEL_API_KEY": "your-api-key"
-      }
+    "cba-mcp-remote": {
+      "url": "http://34.219.106.183:3000/mcp",
+      "headers": { "X-Admin-Panel-Api-Key": "your-api-key" }
     }
   }
 }
 ```
 
-`npm --prefix` sets the working directory automatically — no separate `cwd` needed. Restart your agent and look for a green dot in **Settings → MCP**.
+**Claude Desktop** — same snippet in `claude_desktop_config.json` under `"mcpServers"`.
+
+Replace `your-api-key` with your Admin Panel API key — that is the **only** credential you need to provide. Everything else (AWS, Bitrise, Jenkins, CircleCI) is already configured on the server.
+
+### Step 2 — Restart your agent
+
+Reload Cursor or Claude Desktop. Look for a green dot next to **cba-mcp-remote** in **Settings → MCP**.
+
+### Step 3 — Start querying
+
+```
+Give me all info about com.trainerize.peakfitness
+Which enterprise apps have push certs expiring in the next 30 days?
+Why did this CircleCI build fail? https://app.circleci.com/pipelines/github/glofoxinc/standalone-app-builder/10014
+```
+
+---
+
+<details>
+<summary><b>🌐 HTTP / remote agents (OpenAI Agents SDK, LangChain, n8n)</b> — click to expand</summary>
+
+Point your agent directly at the hosted server:
+
+| Endpoint | Protocol | Compatible with |
+|---|---|---|
+| `POST http://34.219.106.183:3000/mcp` | MCP Streamable HTTP | Claude.ai, OpenAI Agents SDK, MCP Inspector |
+| `GET http://34.219.106.183:3000/sse` | MCP SSE (legacy) | LangChain, n8n, older frameworks |
+| `GET http://34.219.106.183:3000/health` | HTTP | Load balancers, uptime monitors |
+
+Pass your API key on every request via the `X-Admin-Panel-Api-Key` header (or `Authorization: Bearer <key>`).
 
 </details>
 
 <details>
-<summary><b>🌐 Remote agents — HTTP transport</b> — click to expand</summary>
+<summary><b>🔧 Self-hosting / contributing</b> — click to expand</summary>
 
 ```bash
+git clone git@github.com:rasheedcalgary/cbfa-mcp.git
+cd cbfa-mcp && npm install
+cp .env.example .env   # fill in AWS, Bitrise, Jenkins, CircleCI, Admin Panel creds
+npm run build
 TRANSPORT=http npm start
-# Server starts on http://localhost:3000
 ```
 
-| Endpoint | Protocol | Compatible with |
-|---|---|---|
-| `POST /mcp` | MCP Streamable HTTP | Claude.ai, OpenAI Agents SDK, MCP Inspector |
-| `GET /sse` + `POST /message` | MCP SSE (legacy) | LangChain, n8n, older frameworks |
-| `GET /health` | HTTP | Load balancers, uptime monitors |
+| Variable | Purpose |
+|---|---|
+| `ADMIN_PANEL_DOMAIN` | Admin Panel API base URL |
+| `BITRISE_TOKEN` + `BITRISE_APP_SLUG` | Bitrise iOS build trigger, status, log analysis |
+| `JENKINS_URL` + `JENKINS_USER` + `JENKINS_API_KEY` | Jenkins Android builds |
+| `CIRCLE_CI_TOKEN` | Glofox CircleCI build debugging |
+| `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` + `S3_BUCKET` + `S3_KEY` | CSV data layer |
 
 </details>
 
@@ -285,7 +284,7 @@ Debug the failed job in pipeline 10021
 | 3.3 — iOS Membership | ✅ | `IOSMembership` mapped; `AgreementIsMissing` filter across tools |
 | 4 — Action tools | ✅ | Bitrise iOS build trigger, status polling, log analysis (Bitrise + Jenkins) |
 | 4.1 — CircleCI debugger | ✅ | `analyze_circleci_build` — Glofox CBA pipeline debugging via CircleCI API |
-| 5 — Deploy | 🔮 | EC2 / Cloud Run with HTTP transport |
+| 5 — Deploy | ✅ | EC2 with HTTP transport — live at `http://34.219.106.183:3000` |
 
 ---
 

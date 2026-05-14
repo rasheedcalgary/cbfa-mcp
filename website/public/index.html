@@ -1546,31 +1546,25 @@
 <section class="how-section">
   <div class="container">
     <span class="section-eyebrow fade-up">How it works</span>
-    <h2 class="section-title fade-up">From zero to querying in 4 steps</h2>
+    <h2 class="section-title fade-up">From zero to querying in 3 steps</h2>
     <div class="steps-grid fade-up">
       <div class="step-card">
         <div class="step-num">STEP 01</div>
-        <div class="step-icon">📦</div>
-        <div class="step-title">Clone & Install</div>
-        <p class="step-body">Clone the repo and run <span class="code-inline">npm install</span>. Requires Node.js 20+.</p>
+        <div class="step-icon">🔑</div>
+        <div class="step-title">Get your API key</div>
+        <p class="step-body">Grab your <span class="code-inline">ADMIN_PANEL_API_KEY</span> — it's the only credential you need. The server is already running on EC2.</p>
       </div>
       <div class="step-card">
         <div class="step-num">STEP 02</div>
         <div class="step-icon">⚙️</div>
-        <div class="step-title">Configure .env</div>
-        <p class="step-body">Copy <span class="code-inline">.env.example</span> to <span class="code-inline">.env</span> and fill in AWS, Admin Panel, and Bitrise credentials.</p>
+        <div class="step-title">Add one config block</div>
+        <p class="step-body">Drop the <span class="code-inline">mcp.json</span> snippet into Cursor or Claude Desktop. Point it at the hosted server URL and add your key.</p>
       </div>
       <div class="step-card">
         <div class="step-num">STEP 03</div>
-        <div class="step-icon">🔨</div>
-        <div class="step-title">Build</div>
-        <p class="step-body">Run <span class="code-inline">npm run build</span> to compile TypeScript to an optimised ESM bundle in <span class="code-inline">dist/</span>.</p>
-      </div>
-      <div class="step-card">
-        <div class="step-num">STEP 04</div>
         <div class="step-icon">🤖</div>
-        <div class="step-title">Connect Agent</div>
-        <p class="step-body">Add the <span class="code-inline">mcp.json</span> snippet to Cursor or Claude Desktop and supply your <span class="code-inline">ADMIN_PANEL_API_KEY</span>.</p>
+        <div class="step-title">Restart &amp; query</div>
+        <p class="step-body">Reload your agent, wait for the green dot in <span class="code-inline">Settings → MCP</span>, and start asking questions in plain English.</p>
       </div>
     </div>
   </div>
@@ -1583,9 +1577,9 @@
     <h2 class="section-title fade-up">One config block, any agent</h2>
     <div class="int-grid fade-up">
       <div class="int-info">
-        <h3>Works with every MCP client</h3>
-        <p>CBA-MCP supports both <strong>stdio</strong> (local) and <strong>HTTP</strong> (remote) transports. Connect once, query from any agent that speaks MCP.</p>
-        <p>The only credential each user needs is their own <span class="code-inline">ADMIN_PANEL_API_KEY</span> — all server-side infrastructure credentials are pre-loaded from <span class="code-inline">.env</span>.</p>
+        <h3>Already hosted — zero setup required</h3>
+        <p>CBA-MCP is deployed on EC2 and ready to use. No cloning, no building, no <span class="code-inline">.env</span> files. Just point your agent at the hosted URL.</p>
+        <p>The only credential you supply is your own <span class="code-inline">ADMIN_PANEL_API_KEY</span> — all server-side infra (AWS, Bitrise, Jenkins, CircleCI) is pre-configured.</p>
         <div class="compat-list">
           <span class="compat-chip">Cursor</span>
           <span class="compat-chip">Claude Desktop</span>
@@ -1608,15 +1602,10 @@
         </div>
         <pre>{
   <span class="kw">"mcpServers"</span>: {
-    <span class="kw">"cba-mcp"</span>: {
-      <span class="kw">"command"</span>: <span class="str">"npm"</span>,
-      <span class="kw">"args"</span>: [
-        <span class="str">"--prefix"</span>,
-        <span class="str">"/path/to/cbfa-mcp"</span>,
-        <span class="str">"start"</span>
-      ],
-      <span class="kw">"env"</span>: {
-        <span class="kw">"ADMIN_PANEL_API_KEY"</span>:
+    <span class="kw">"cba-mcp-remote"</span>: {
+      <span class="kw">"url"</span>: <span class="str">"http://34.219.106.183:3000/mcp"</span>,
+      <span class="kw">"headers"</span>: {
+        <span class="kw">"X-Admin-Panel-Api-Key"</span>:
           <span class="str">"your-api-key"</span>  <span class="cm">← only this</span>
       }
     }
